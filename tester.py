@@ -20,16 +20,6 @@ TIMEFRAME = {
 }
 
 
-def processed_volume_levels_to_times(processed_volume_levels):
-    times = []
-    if processed_volume_levels is None:
-        return times
-
-    for price, volume_level in processed_volume_levels.items():
-        times += volume_level['times']
-    return times
-
-
 def apply_frame_type(df):
     return df.astype({
         'figi': 'object',
@@ -78,8 +68,12 @@ class Tester:
                     self.fix_date[CURRENT_TIMEFRAME] = time.hour
                     self.clusters = Utils.ticks_to_cluster(self.df, period=CURRENT_TIMEFRAME)
 
-                    # times = processed_volume_levels_to_times(self.processed_volume_levels)
-                    # self.finplot_graph.render(self.df, entry_point_times=times, clusters=self.clusters)
+                    valid_entry_points, invalid_entry_points = Utils.processed_volume_levels_to_times(
+                        self.processed_volume_levels)
+                    self.finplot_graph.render(self.df,
+                                              valid_entry_points=valid_entry_points,
+                                              invalid_entry_points=invalid_entry_points,
+                                              clusters=self.clusters)
 
                 data = pd.DataFrame.from_records([
                     {
@@ -158,8 +152,12 @@ class Tester:
         # по завершению анализа перестраиваю показания, т.к. закрытие торгов не совпадает целому часу
         # например 15:59:59.230333+00:00
         self.clusters = Utils.ticks_to_cluster(self.df, period=CURRENT_TIMEFRAME)
-        # times = processed_volume_levels_to_times(self.processed_volume_levels)
-        # self.finplot_graph.render(self.df, entry_point_times=times, clusters=self.clusters)
+        valid_entry_points, invalid_entry_points = Utils.processed_volume_levels_to_times(
+            self.processed_volume_levels)
+        self.finplot_graph.render(self.df,
+                                  valid_entry_points=valid_entry_points,
+                                  invalid_entry_points=invalid_entry_points,
+                                  clusters=self.clusters)
 
         test_end_time = datetime.datetime.now()
         print('\nанализ завершен')

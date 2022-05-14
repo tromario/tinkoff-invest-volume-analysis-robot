@@ -74,8 +74,10 @@ class Utils:
         # определение победителя:
         # если соотношение лонгистов больше и макс объем как можно ниже, то приоритет для лонга
         # если соотношение шортистов больше и макс объем как можно выше, то приоритет для шорта
-        candles.loc[candles['direction'] == TradeDirection.TRADE_DIRECTION_BUY, 'win'] = (candles['long'] > 50) & (candles['percent'] <= 40)
-        candles.loc[candles['direction'] == TradeDirection.TRADE_DIRECTION_SELL, 'win'] = (candles['short'] > 50) & (candles['percent'] <= 40)
+        candles.loc[candles['direction'] == TradeDirection.TRADE_DIRECTION_BUY, 'win'] = (candles['long'] > 50) & (
+                    candles['percent'] <= 40)
+        candles.loc[candles['direction'] == TradeDirection.TRADE_DIRECTION_SELL, 'win'] = (candles['short'] > 50) & (
+                    candles['percent'] <= 40)
 
         return candles
 
@@ -95,3 +97,19 @@ class Utils:
 
         candles = candles[['time', 'open', 'close', 'high', 'low', 'total_volume', 'direction', 'max_volume_price']]
         return candles.reset_index(drop=True)
+
+    @staticmethod
+    def processed_volume_levels_to_times(processed_volume_levels):
+        valid_entry_points = []
+        invalid_entry_points = []
+        if processed_volume_levels is None:
+            return valid_entry_points, invalid_entry_points
+
+        for price, volume_level in processed_volume_levels.items():
+            for time, is_success in volume_level['times'].items():
+                if is_success:
+                    valid_entry_points += [time]
+                else:
+                    invalid_entry_points += [time]
+        
+        return valid_entry_points, invalid_entry_points
