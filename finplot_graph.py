@@ -23,12 +23,12 @@ class FinplotGraph(threading.Thread):
         # риски в свечах с максимальными объемами
         max_volumes = candles[['time', 'max_volume_price']]
 
-        # округление времени точек входа
-        round_valid_times = [pd.to_datetime(time).round('min') for time in valid_entry_points]
+        # округление времени точек входа для сопоставления с графиком
+        round_valid_times = [pd.to_datetime(time).floor('min') for time in valid_entry_points]
         candles.loc[candles['time'].isin(round_valid_times), 'valid_entry_point'] = candles['low'] - (
                     candles['low'] * 0.007 / 100)
 
-        round_invalid_times = [pd.to_datetime(time).round('min') for time in invalid_entry_points]
+        round_invalid_times = [pd.to_datetime(time).floor('min') for time in invalid_entry_points]
         candles.loc[candles['time'].isin(round_invalid_times), 'invalid_entry_point'] = candles['low'] - (
                     candles['low'] * 0.007 / 100)
 

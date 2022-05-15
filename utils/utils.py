@@ -1,3 +1,5 @@
+import datetime
+
 import numpy as np
 import pandas as pd
 from tinkoff.invest import Quotation, TradeDirection
@@ -18,6 +20,20 @@ class Utils:
         # str_price = f'{quotation.units}.{str_nano}'
         # return float(str_price)
         # endregion
+
+    @staticmethod
+    def parse_date(str_date):
+        try:
+            return datetime.datetime.strptime(str_date, "%Y-%m-%d %H:%M:%S.%f%z")
+        except ValueError as ex:
+            pass
+
+        try:
+            return datetime.datetime.strptime(str_date, "%Y-%m-%d %H:%M:%S%z")
+        except ValueError as ex:
+            pass
+
+        return None
 
     @staticmethod
     def is_price_in_range_cluster(current_price, cluster_price):
