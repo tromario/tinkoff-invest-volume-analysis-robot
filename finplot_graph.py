@@ -4,6 +4,7 @@ from datetime import timedelta
 import finplot as fplt
 import pandas as pd
 
+from settings import SIGNAL_CLUSTER_PERIOD
 from utils.utils import Utils
 
 
@@ -19,7 +20,7 @@ class FinplotGraph(threading.Thread):
         fplt.show()
 
     def render(self, df, valid_entry_points, invalid_entry_points, clusters=None):
-        candles = Utils.ticks_to_cluster(df, period='1min')
+        candles = Utils.ticks_to_cluster(df, period=SIGNAL_CLUSTER_PERIOD)
         # риски в свечах с максимальными объемами
         max_volumes = candles[['time', 'max_volume_price']]
 
