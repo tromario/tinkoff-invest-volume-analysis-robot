@@ -21,10 +21,10 @@ pd.options.display.max_columns = None
 pd.options.display.max_rows = None
 pd.options.display.width = None
 
-logging.basicConfig(format="%(asctime)s %(levelname)s:%(message)s", level=logging.INFO)
+logging.basicConfig(format="%(asctime)s %(levelname)s --- (%(filename)s).%(funcName)s(%(lineno)d):\t %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-TIME_STEP = 30
+TIME_STEP = 60
 
 
 async def request_iterator():
@@ -76,7 +76,7 @@ def processed_data(trade):
                 'direction': trade.direction,
                 'price': price,
                 'quantity': trade.quantity,
-                'time': trade.time,
+                'time': pd.to_datetime(str(trade.time), utc=True)
             }
         ])
 
@@ -108,95 +108,13 @@ class WriteHistory:
 
                 file_path = get_file_path_by_instrument(instrument)
                 self.df_by_instrument[figi] = pd.read_csv(file_path, sep=',')
+                self.df_by_instrument[figi]['time'] = pd.to_datetime(self.df_by_instrument[figi]['time'], utc=True)
 
                 history_df = await self.get_history_trades(client, instrument)
                 self.df_by_instrument[figi] = Utils.merge_two_frames(self.df_by_instrument[figi], history_df)
             except Exception as ex:
                 logger.error(ex)
         self.is_history_processed = False
-
-    # todo для эмуляции, удалить
-    async def local_download_last_trades(self, client, instrument):
-        logger.info('download_last_trades: run')
-        history_df = create_empty_df()
-
-        with open('data/temp/history-2022-05-08.json', 'r') as f:
-            marketdata = json.load(f)
-
-            for market_trade in marketdata['trades']:
-                price = market_trade['price']
-                price = Quotation(price['units'], price['nano'])
-
-                trade = Trade()
-                trade.figi = market_trade['figi']
-                trade.price = price
-                trade.time = market_trade['time']
-                trade.quantity = market_trade['quantity']
-                trade.direction = market_trade['direction']
-
-                logger.info(f'history {trade}')
-                if trade is None:
-                    continue
-
-                trade_df = processed_data(trade)
-                if trade_df is not None:
-                    history_df = pd.concat([history_df, trade_df])
-                await asyncio.sleep(0.01)
-        return history_df
-
-    # todo для эмуляции, удалить
-    async def local_trades_stream(self, client):
-        temp_df = {}
-        for instrument in settings.INSTRUMENTS:
-            temp_df[instrument['figi']] = create_empty_df()
-
-        with open('data/temp/SBER-2022-05-08.json', 'r') as f:
-            marketdata = json.load(f)
-
-            for market_trade in marketdata['trades']:
-                price = market_trade['price']
-                price = Quotation(price['units'], price['nano'])
-
-                trade = Trade()
-                trade.figi = market_trade['figi']
-                trade.price = price
-                trade.time = market_trade['time']
-                trade.quantity = market_trade['quantity']
-                trade.direction = market_trade['direction']
-
-                logger.info(trade)
-                if trade is None:
-                    continue
-
-                processed_trade_df = processed_data(trade)
-                instrument = next(item for item in settings.INSTRUMENTS if item["figi"] == trade.figi)
-
-                print(self.is_history_processed, self.df_by_instrument[trade.figi])
-
-                if processed_trade_df is not None:
-                    if self.is_history_processed is True:
-                        # пока происходит обработка истории - новые данные складываю во временную переменную
-                        next_df = [temp_df[trade.figi], processed_trade_df]
-                        temp_df[trade.figi] = pd.concat(next_df, ignore_index=True)
-                    else:
-                        # есть проблема, когда исторические данные загрузились, но в real-time они не приходят
-                        # тогда исторические данные не окажутся в файле
-                        if len(temp_df[trade.figi]) > 0:
-                            # если после обработки истории успели накопить real-time данные,
-                            # то подмерживаю их и очищаю временную переменную
-                            next_df = [self.df_by_instrument[trade.figi], temp_df[trade.figi], processed_trade_df]
-                            self.df_by_instrument[trade.figi] = pd.concat(next_df, ignore_index=True)
-                            temp_df[trade.figi].drop(temp_df[trade.figi].index, inplace=True)
-
-                            file_path = get_file_path_by_instrument(instrument)
-                            self.df_by_instrument[trade.figi].to_csv(file_path, mode='w', header=True, index=False)
-                        else:
-                            next_df = [self.df_by_instrument[trade.figi], processed_trade_df]
-                            self.df_by_instrument[trade.figi] = pd.concat(next_df, ignore_index=True)
-
-                        file_path = get_file_path_by_instrument(instrument)
-                        processed_trade_df.to_csv(file_path, mode='a', header=False, index=False)
-                await asyncio.sleep(0.1)
 
     # загрузка последних доступных обезличенных сделок
     async def get_history_trades(self, client, instrument):
@@ -208,14 +126,17 @@ class WriteHistory:
 
         while True:
             try:
+                interval_from = current_date - timedelta(minutes=time + TIME_STEP)
+                interval_to = current_date - timedelta(minutes=time)
+
                 logger.info(instrument)
-                logger.info(f'from {current_date - timedelta(minutes=time + TIME_STEP)}')
-                logger.info(f'to {current_date - timedelta(minutes=time)}')
+                logger.info(f'from {interval_from}')
+                logger.info(f'to {interval_to}')
 
                 response = await client.market_data.get_last_trades(
                     figi=figi,
-                    from_=current_date - timedelta(minutes=time + TIME_STEP),
-                    to=current_date - timedelta(minutes=time),
+                    from_=interval_from,
+                    to=interval_to,
                 )
                 logger.info(f'{instrument} size = {len(response.trades)}')
                 if response is None or len(response.trades) == 0:
@@ -225,6 +146,7 @@ class WriteHistory:
                     processed_trade_df = processed_data(trade)
                     if processed_trade_df is not None:
                         history_df = pd.concat([history_df, processed_trade_df])
+                history_df = history_df.sort_values('time')
                 time += TIME_STEP
             except Exception as ex:
                 logger.error(ex)
