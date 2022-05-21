@@ -14,7 +14,8 @@ from tinkoff.invest import (
 from tinkoff.invest.utils import now
 
 import settings
-from analyzer import Analyzer
+from strategies.profile_touch_strategy import ProfileTouchStrategy
+from services.order_service import OrderService
 from utils.utils import Utils
 
 pd.options.display.max_columns = None
@@ -98,13 +99,18 @@ def is_open_exchange():
     return now() < close_time
 
 
+# задать имя проекту: volume analysis
 class TradingRobot:
     def __init__(self):
+        # self.client = AsyncClient(settings.TOKEN)
+
+        self.order_service = OrderService(is_notification=True, is_open_orders=True)
+        self.order_service.start()
+
         self.is_history_processed = True
 
         self.df_by_instrument = {}
-        self.instrument_files = {}
-        self.analyzer = {}
+        self.strategy = {}
         for instrument in settings.INSTRUMENTS:
             figi = instrument['figi']
             df_by_instrument = create_empty_df()
@@ -114,9 +120,9 @@ class TradingRobot:
             instrument_file = open(file_path, 'a', newline='')
             df_by_instrument.to_csv(instrument_file, mode='a', header=instrument_file.tell() == 0, index=False)
 
-            analyzer = Analyzer(instrument['name'])
-            analyzer.start()
-            self.analyzer[figi] = analyzer
+            profile_touch_strategy = ProfileTouchStrategy(instrument['name'])
+            profile_touch_strategy.start()
+            self.strategy[figi] = profile_touch_strategy
 
     async def sync_df(self, client):
         self.is_history_processed = True
@@ -182,8 +188,7 @@ class TradingRobot:
             ):
                 if not is_open_exchange():
                     logger.info('торговый день завершен, сохранение статистики')
-                    for key, analyzer in self.analyzer.items():
-                        analyzer.write_statistics()
+                    self.order_service.write_statistics()
                     # добавить выход из приложения
 
                 logger.info(marketdata)
@@ -213,13 +218,17 @@ class TradingRobot:
                             temp_df[figi].drop(temp_df[figi].index, inplace=True)
 
                             # отправляю обезличенные сделки на анализ
-                            self.analyzer[figi].set_df(self.df_by_instrument[figi])
+                            self.strategy[figi].set_df(self.df_by_instrument[figi])
 
                             file_path = get_file_path_by_instrument(instrument)
                             self.df_by_instrument[figi].to_csv(file_path, mode='w', header=True, index=False)
                         else:
                             # отправляю обезличенную сделку на анализ
-                            self.analyzer[figi].analyze(processed_trade_df)
+                            # (алгоритм анализа можно заменить на любой)
+                            # если ТВ подтвердится, то возвращается структура сделки
+                            orders = self.strategy[figi].analyze(processed_trade_df)
+                            if orders is not None:
+                                [self.order_service.create_order(order) for order in orders]
 
                             next_df = [self.df_by_instrument[figi], processed_trade_df]
                             self.df_by_instrument[figi] = pd.concat(next_df, ignore_index=True)

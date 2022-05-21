@@ -1,14 +1,26 @@
 import csv
 import datetime
+import logging
 
 import pandas as pd
 
-from analyzer import Analyzer
+from strategies.profile_touch_strategy import ProfileTouchStrategy
+from services.order_service import OrderService
 from utils.utils import Utils
 
 pd.options.display.max_columns = None
 pd.options.display.max_rows = None
 pd.options.display.width = None
+
+date = datetime.datetime.now().strftime('%Y-%m-%d')
+format = '%(asctime)s %(levelname)s --- (%(filename)s).%(funcName)s(%(lineno)d):\t %(message)s'
+logging.basicConfig(format=format,
+                    level=logging.INFO,
+                    handlers=[
+                        logging.FileHandler(f'./logs/log-{date}.log', encoding='utf-8'),
+                        logging.StreamHandler()
+                    ])
+logger = logging.getLogger(__name__)
 
 
 def apply_frame_type(df):
@@ -21,7 +33,7 @@ def apply_frame_type(df):
     })
 
 
-class Tester:
+class TestProfileTouchStrategy:
     def __init__(self, instrument_name, file_path):
         self.instrument_name = instrument_name
         self.file_path = file_path
@@ -29,37 +41,44 @@ class Tester:
         self.df = pd.DataFrame(columns=['figi', 'direction', 'price', 'quantity', 'time'])
         self.df = apply_frame_type(self.df)
 
-        self.analyzer = Analyzer(instrument_name)
-        self.analyzer.start()
+        self.profile_touch_strategy = ProfileTouchStrategy(instrument_name)
+        self.profile_touch_strategy.start()
+
+        self.order_service = OrderService()
+        self.order_service.start()
 
     def run(self):
         test_start_time = datetime.datetime.now()
-        print(f'начат анализ {self.file_path} в {test_start_time}')
+        logger.info(f'запущен анализ {self.file_path} в {test_start_time}')
 
         with open(self.file_path, newline='') as file:
             reader = csv.DictReader(file, delimiter=',')
             for row in reader:
                 figi = row['figi']
-                current_price = float(row['price'])
+                price = float(row['price'])
                 time = Utils.parse_date(row['time'])
 
                 processed_trade_df = pd.DataFrame.from_records([
                     {
                         'figi': figi,
                         'direction': row['direction'],
-                        'price': current_price,
+                        'price': price,
                         'quantity': row['quantity'],
                         'time': pd.to_datetime(str(time), utc=True),
                     }
                 ])
-                processed_trade_df = apply_frame_type(processed_trade_df)
-                self.analyzer.analyze(processed_trade_df)
+                self.order_service.processed_orders(self.instrument_name, price, time)
 
-        self.analyzer.write_statistics()
+                processed_trade_df = apply_frame_type(processed_trade_df)
+                orders = self.profile_touch_strategy.analyze(processed_trade_df)
+                if orders is not None:
+                    [self.order_service.create_order(order) for order in orders]
+
+        self.order_service.write_statistics()
 
         test_end_time = datetime.datetime.now()
-        print('\nанализ завершен')
-        print(f'время тестирования: {(test_end_time - test_start_time).total_seconds() / 60} мин.')
+        logger.info('анализ завершен')
+        logger.info(f'время тестирования: {(test_end_time - test_start_time).total_seconds() / 60} мин.')
 
 
 if __name__ == "__main__":
@@ -86,5 +105,5 @@ if __name__ == "__main__":
 
     for history in histories:
         for file_path in history['files']:
-            tester = Tester(history['name'], file_path)
+            tester = TestProfileTouchStrategy(history['name'], file_path)
             tester.run()
