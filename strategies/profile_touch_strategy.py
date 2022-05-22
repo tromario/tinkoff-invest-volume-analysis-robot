@@ -5,7 +5,7 @@ import threading
 import pandas as pd
 from tinkoff.invest import TradeDirection, OrderDirection
 
-from finplot_graph import FinplotGraph
+from visualizers.finplot_graph import FinplotGraph
 from settings import PROFILE_PERIOD, FIRST_TOUCH_VOLUME_LEVEL, SECOND_TOUCH_VOLUME_LEVEL, FIRST_GOAL, \
     PERCENTAGE_STOP_LOSS, SIGNAL_CLUSTER_PERIOD, IS_SHOW_CHART, GOAL_STEP, COUNT_LOTS, COUNT_GOALS
 from utils.order_util import prepare_orders
@@ -47,8 +47,8 @@ class ProfileTouchStrategy(threading.Thread):
         self.processed_volume_levels = {}
 
         if IS_SHOW_CHART:
-            self.finplot_graph = FinplotGraph()
-            self.finplot_graph.start()
+            self.visualizer = FinplotGraph(SIGNAL_CLUSTER_PERIOD)
+            self.visualizer.start()
 
     def set_df(self, df):
         self.df = df
@@ -72,15 +72,7 @@ class ProfileTouchStrategy(threading.Thread):
         if self.fix_date[PROFILE_PERIOD] < time.hour:
             # построение кластерных свечей и графика раз в 1 час
             self.fix_date[PROFILE_PERIOD] = time.hour
-            self.clusters = Utils.ticks_to_cluster(self.df, period=PROFILE_PERIOD)
-
-            valid_entry_points, invalid_entry_points = Utils.processed_volume_levels_to_times(
-                self.processed_volume_levels)
-            if IS_SHOW_CHART:
-                self.finplot_graph.render(self.df,
-                                          valid_entry_points=valid_entry_points,
-                                          invalid_entry_points=invalid_entry_points,
-                                          clusters=self.clusters)
+            self.calculate_clusters()
 
         self.df = pd.concat([self.df, trade_df])
 
@@ -125,6 +117,18 @@ class ProfileTouchStrategy(threading.Thread):
             # если торги доступны, то каждую завершенную минуту проверяю кластера на возможную ТВ
             if Utils.is_open_orders(time) and len(self.processed_volume_levels) > 0:
                 return self.check_entry_points(current_price, time)
+
+    def calculate_clusters(self):
+        if self.df.empty:
+            return
+        self.clusters = Utils.ticks_to_cluster(self.df, period=PROFILE_PERIOD)
+        valid_entry_points, invalid_entry_points = Utils.processed_volume_levels_to_times(
+            self.processed_volume_levels)
+        if IS_SHOW_CHART:
+            self.visualizer.render(self.df,
+                                   valid_entry_points=valid_entry_points,
+                                   invalid_entry_points=invalid_entry_points,
+                                   clusters=self.clusters)
 
     def check_entry_points(self, current_price, time):
         for volume_price, volume_level in self.processed_volume_levels.items():

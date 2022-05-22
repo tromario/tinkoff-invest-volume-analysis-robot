@@ -162,18 +162,6 @@ class OrderService(threading.Thread):
                         self.close_order(order)
 
     def write_statistics(self):
-        # if not self.df.empty:
-        #     # по завершению анализа перестраиваю показания, т.к. закрытие торгов не совпадает целому часу
-        #     # например 15:59:59.230333+00:00
-        #     self.clusters = Utils.ticks_to_cluster(self.df, period=CURRENT_TIMEFRAME)
-        #     valid_entry_points, invalid_entry_points = Utils.processed_volume_levels_to_times(
-        #         self.processed_volume_levels)
-        #     if IS_SHOW_CHART:
-        #         self.finplot_graph.render(self.df,
-        #                                   valid_entry_points=valid_entry_points,
-        #                                   invalid_entry_points=invalid_entry_points,
-        #                                   clusters=self.clusters)
-
         groups = groupby(self.orders, lambda order: order['instrument'])
         for instrument, group in groups:
             file_path = f'./logs/statistics-{instrument}.log'

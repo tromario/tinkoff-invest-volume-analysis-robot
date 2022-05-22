@@ -74,6 +74,9 @@ class TestProfileTouchStrategy:
                 if orders is not None:
                     [self.order_service.create_order(order) for order in orders]
 
+        # после завершения анализа перестраиваю график, т.к. закрытие торгов не совпадает целому часу
+        # например 15:59:59.230333+00:00
+        self.profile_touch_strategy.calculate_clusters()
         self.order_service.write_statistics()
 
         test_end_time = datetime.datetime.now()
