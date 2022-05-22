@@ -92,13 +92,13 @@ def open_order(figi, quantity, direction, order_id, order_type=OrderType.ORDER_T
 
 # в отдельном потоке, чтобы не замедлял процесс обработки
 class OrderService(threading.Thread):
-    def __init__(self, is_notification=False, is_open_orders=False):
+    def __init__(self, is_notification=False, can_open_orders=False):
         super().__init__()
 
         self.telegram_service = TelegramService(NOTIFICATION['bot_token'], NOTIFICATION['chat_id'])
 
         self.is_notification = is_notification
-        self.is_open_orders = is_open_orders
+        self.can_open_orders = can_open_orders
         self.orders: List[Order] = load_orders()
 
     def create_order(self, order: Order):
@@ -119,7 +119,7 @@ class OrderService(threading.Thread):
                     self.close_order(active_order, order.open)
 
             instrument = get_instrument_by_name(order.instrument)
-            if self.is_open_orders:
+            if self.can_open_orders:
                 new_order = open_order(
                     figi=instrument['future'],
                     quantity=order.quantity,
@@ -153,7 +153,7 @@ class OrderService(threading.Thread):
         else:
             logger.info(f'закрыта заявка по стоп-лоссу с результатом {order.result}; открыта в {order.time}')
 
-        if self.is_open_orders:
+        if self.can_open_orders:
             instrument = get_instrument_by_name(order.instrument)
             # закрываю сделку обратным ордером
             reverse_direction = OrderDirection.ORDER_DIRECTION_BUY.value

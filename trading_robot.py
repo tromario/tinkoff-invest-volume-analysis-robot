@@ -13,7 +13,7 @@ from tinkoff.invest import (
 )
 from tinkoff.invest.utils import now
 
-import settings
+from settings import INSTRUMENTS, CAN_OPEN_ORDERS, TOKEN
 from strategies.profile_touch_strategy import ProfileTouchStrategy
 from services.order_service import OrderService
 from utils.utils import Utils
@@ -99,19 +99,16 @@ def is_open_exchange():
     return now() < close_time
 
 
-# задать имя проекту: volume analysis
 class TradingRobot:
     def __init__(self):
-        # self.client = AsyncClient(settings.TOKEN)
-
-        self.order_service = OrderService(is_notification=True, is_open_orders=True)
+        self.order_service = OrderService(is_notification=True, can_open_orders=CAN_OPEN_ORDERS)
         self.order_service.start()
 
         self.is_history_processed = True
 
         self.df_by_instrument = {}
         self.strategy = {}
-        for instrument in settings.INSTRUMENTS:
+        for instrument in INSTRUMENTS:
             figi = instrument['figi']
             df_by_instrument = create_empty_df()
             self.df_by_instrument[figi] = df_by_instrument
@@ -126,7 +123,7 @@ class TradingRobot:
 
     async def sync_df(self, client):
         self.is_history_processed = True
-        for instrument in settings.INSTRUMENTS:
+        for instrument in INSTRUMENTS:
             try:
                 figi = instrument['figi']
 
@@ -179,7 +176,7 @@ class TradingRobot:
 
     async def trades_stream(self, client):
         temp_df = {}
-        for instrument in settings.INSTRUMENTS:
+        for instrument in INSTRUMENTS:
             temp_df[instrument['figi']] = create_empty_df()
 
         try:
@@ -199,7 +196,7 @@ class TradingRobot:
                     continue
 
                 figi = trade.figi
-                instrument = next(item for item in settings.INSTRUMENTS if item["figi"] == figi)
+                instrument = next(item for item in INSTRUMENTS if item["figi"] == figi)
 
                 processed_trade_df = processed_data(trade)
                 if processed_trade_df is not None:
@@ -239,7 +236,7 @@ class TradingRobot:
             logger.error(ex)
 
     async def main(self):
-        async with AsyncClient(settings.TOKEN) as client:
+        async with AsyncClient(TOKEN) as client:
             tasks = [asyncio.ensure_future(self.trades_stream(client)),
                      asyncio.ensure_future(self.sync_df(client))]
             await asyncio.wait(tasks)
