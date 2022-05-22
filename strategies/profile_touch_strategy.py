@@ -1,10 +1,12 @@
 import datetime
 import logging
 import threading
+from typing import List, Optional
 
 import pandas as pd
 from tinkoff.invest import TradeDirection, OrderDirection
 
+from domains.order import Order
 from visualizers.finplot_graph import FinplotGraph
 from settings import PROFILE_PERIOD, FIRST_TOUCH_VOLUME_LEVEL, SECOND_TOUCH_VOLUME_LEVEL, FIRST_GOAL, \
     PERCENTAGE_STOP_LOSS, SIGNAL_CLUSTER_PERIOD, IS_SHOW_CHART, GOAL_STEP, COUNT_LOTS, COUNT_GOALS
@@ -54,7 +56,7 @@ class ProfileTouchStrategy(threading.Thread):
         self.df = df
         logger.info('загружен новый data frame')
 
-    def analyze(self, trade_df):
+    def analyze(self, trade_df) -> Optional[List[Order]]:
         trade_data = trade_df.iloc[0]
         current_price = trade_data['price']
         time = trade_data['time']
@@ -130,7 +132,7 @@ class ProfileTouchStrategy(threading.Thread):
                                    invalid_entry_points=invalid_entry_points,
                                    clusters=self.clusters)
 
-    def check_entry_points(self, current_price, time):
+    def check_entry_points(self, current_price, time) -> Optional[List[Order]]:
         for volume_price, volume_level in self.processed_volume_levels.items():
             for touch_time, value in volume_level['times'].items():
                 if value is not None:
@@ -211,7 +213,7 @@ class ProfileTouchStrategy(threading.Thread):
                     self.processed_volume_levels[volume_price]['times'][touch_time] = False
                     self.processed_volume_levels[volume_price]['last_touch_time'] = None
 
-    def prepare_orders(self, current_price, time, stop, direction):
+    def prepare_orders(self, current_price, time, stop, direction) -> List[Order]:
         return prepare_orders(
             instrument=self.instrument_name,
             current_price=current_price,
