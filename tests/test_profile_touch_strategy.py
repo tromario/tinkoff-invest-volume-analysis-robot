@@ -6,7 +6,7 @@ import pandas as pd
 
 from strategies.profile_touch_strategy import ProfileTouchStrategy
 from services.order_service import OrderService
-from utils.utils import Utils
+from utils.utils import Utils, fixed_float
 
 pd.options.display.max_columns = None
 pd.options.display.max_rows = None
@@ -49,7 +49,7 @@ class TestProfileTouchStrategy:
 
     def run(self):
         test_start_time = datetime.datetime.now()
-        logger.info(f'запущен анализ {self.file_path} в {test_start_time}')
+        logger.info(f'анализ истории {self.file_path}')
 
         with open(self.file_path, newline='') as file:
             reader = csv.DictReader(file, delimiter=',')
@@ -80,28 +80,35 @@ class TestProfileTouchStrategy:
         self.order_service.write_statistics()
 
         test_end_time = datetime.datetime.now()
+        total_test_time = (test_end_time - test_start_time).total_seconds() / 60
         logger.info('анализ завершен')
-        logger.info(f'время тестирования: {(test_end_time - test_start_time).total_seconds() / 60} мин.')
+        logger.info(f'время тестирования: {fixed_float(total_test_time)} мин.')
 
 
 if __name__ == "__main__":
     usd_histories = {'name': 'USD000UTSTOM',
-                     'files': ['./data/USD000UTSTOM-20220517.csv', './data/USD000UTSTOM-20220516.csv',
-                               './data/USD000UTSTOM-20220513.csv', './data/USD000UTSTOM-20220512.csv',
-                               './data/USD000UTSTOM-20220511.csv', './data/USD000UTSTOM-20220506.csv',
-                               './data/USD000UTSTOM-20220505.csv', './data/USD000UTSTOM-20220504.csv']}
+                     'files': ['./data/USD000UTSTOM-20220504.csv', './data/USD000UTSTOM-20220505.csv',
+                               './data/USD000UTSTOM-20220506.csv', './data/USD000UTSTOM-20220511.csv',
+                               './data/USD000UTSTOM-20220512.csv', './data/USD000UTSTOM-20220513.csv',
+                               './data/USD000UTSTOM-20220516.csv', './data/USD000UTSTOM-20220517.csv',
+                               './data/USD000UTSTOM-20220518.csv', './data/USD000UTSTOM-20220519.csv',
+                               './data/USD000UTSTOM-20220520.csv']}
 
     sber_histories = {'name': 'SBER',
-                      'files': ['./data/SBER-20220517.csv', './data/SBER-20220516.csv',
-                                './data/SBER-20220513.csv', './data/SBER-20220512.csv',
-                                './data/SBER-20220511.csv', './data/SBER-20220506.csv',
-                                './data/SBER-20220505.csv', './data/SBER-20220504.csv']}
+                      'files': ['./data/SBER-20220504.csv', './data/SBER-20220505.csv',
+                                './data/SBER-20220506.csv', './data/SBER-20220511.csv',
+                                './data/SBER-20220512.csv', './data/SBER-20220513.csv',
+                                './data/SBER-20220516.csv', './data/SBER-20220517.csv',
+                                './data/SBER-20220518.csv', './data/SBER-20220519.csv',
+                                './data/SBER-20220520.csv']}
 
     gaz_histories = {'name': 'GAZP',
-                     'files': ['./data/GAZP-20220517.csv', './data/GAZP-20220516.csv',
-                               './data/GAZP-20220513.csv', './data/GAZP-20220512.csv',
-                               './data/GAZP-20220511.csv', './data/GAZP-20220506.csv',
-                               './data/GAZP-20220505.csv', './data/GAZP-20220504.csv']}
+                     'files': ['./data/GAZP-20220504.csv', './data/GAZP-20220505.csv',
+                               './data/GAZP-20220506.csv', './data/GAZP-20220511.csv',
+                               './data/GAZP-20220512.csv', './data/GAZP-20220513.csv',
+                               './data/GAZP-20220516.csv', './data/GAZP-20220517.csv',
+                               './data/GAZP-20220518.csv', './data/GAZP-20220519.csv',
+                               './data/GAZP-20220520.csv']}
 
     histories = [usd_histories] + [sber_histories] + [gaz_histories]
     total_result = 0
