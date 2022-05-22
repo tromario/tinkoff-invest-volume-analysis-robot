@@ -9,9 +9,9 @@ from tinkoff.invest import Client, OrderType, OrderDirection
 
 from domains.order import Order
 from services.telegram_service import TelegramService
-from settings import NOTIFICATION, SANDBOX_ACCOUNT_ID, INSTRUMENTS, TOKEN
-from utils.order_util import is_order_already_open
-from utils.utils import Utils, fixed_float
+from settings import NOTIFICATION, SANDBOX_ACCOUNT_ID, TOKEN, IS_SANDBOX, REAL_ACCOUNT_ID
+from utils.order_util import is_order_already_open, get_reverse_order
+from utils.utils import Utils, fixed_float, get_instrument_by_name
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +30,19 @@ def write_file(order: Order):
         logger.error(ex)
 
 
+def rewrite_file(orders: List[Order]):
+    try:
+        with open(orders_file_path, 'w', newline='') as file:
+            writer = csv.writer(file)
+            for order in orders:
+                order_dict = dict(order)
+                if file.tell() == 0:
+                    writer.writerow(order_dict.keys())
+                writer.writerow(order_dict.values())
+    except Exception as ex:
+        logger.error(ex)
+
+
 def load_orders():
     orders: List[Order] = []
 
@@ -42,11 +55,39 @@ def load_orders():
             # header = next(reader)
             for row in reader:
                 order = Order.from_dict(row)
-                orders.append(order)
+                if order.status == 'open':
+                    # после запуска приложения анализирую только незакрытые позиции
+                    orders.append(order)
     except Exception as ex:
         logger.error(ex)
 
     return orders
+
+
+def open_order(figi, quantity, direction, order_id, order_type=OrderType.ORDER_TYPE_MARKET):
+    with Client(TOKEN) as client:
+        # todo может возникнуть ситуация, когда будет создано 100 позиций с 1 лотом в каждой
+        #  сервер не позволит выполнить моментально 100 запросов
+        if IS_SANDBOX:
+            close_order = client.sandbox.post_sandbox_order(
+                account_id=SANDBOX_ACCOUNT_ID,
+                figi=figi,
+                quantity=quantity,
+                direction=direction,
+                order_type=order_type,
+                order_id=order_id
+            )
+        else:
+            close_order = client.orders.post_order(
+                account_id=REAL_ACCOUNT_ID,
+                figi=figi,
+                quantity=quantity,
+                direction=direction,
+                order_type=order_type,
+                order_id=order_id
+            )
+        logger.info(close_order)
+        return close_order
 
 
 # в отдельном потоке, чтобы не замедлял процесс обработки
@@ -66,24 +107,26 @@ class OrderService(threading.Thread):
                 return
 
             if is_order_already_open(self.orders, order):
-                logger.info(f'сделка уже открыта: {order}')
+                logger.info(f'сделка в направлении {order.direction} уже открыта: {order}')
                 return
 
-            instrument = next(item for item in INSTRUMENTS if item["name"] == order.instrument)
+            active_orders = get_reverse_order(self.orders, order)
+            if len(active_orders) > 0:
+                # если поступила сделка в обратном направлении, то переворачиваю позицию
+                logger.info(f'переворачиваю позицию - поступила сделка в обратном направлении: {order}')
+                for active_order in active_orders:
+                    # цена закрытия предыдущей сделки = цене открытия новой
+                    self.close_order(active_order, order.open)
 
+            instrument = get_instrument_by_name(order.instrument)
             if self.is_open_orders:
-                with Client(TOKEN) as client:
-                    # todo может возникнуть ситуация, когда будет создано 100 позиций с 1 лотом в каждой
-                    #  сервер не позволит выполнить моментально 100 запросов
-                    new_order = client.sandbox.post_sandbox_order(
-                        account_id=SANDBOX_ACCOUNT_ID,
-                        figi=instrument['future'],
-                        quantity=1,
-                        direction=order.direction,
-                        order_type=OrderType.ORDER_TYPE_MARKET,
-                        order_id=order.id)
-                    logger.info(new_order)
-                    order.order_id = new_order.order_id
+                new_order = open_order(
+                    figi=instrument['future'],
+                    quantity=order.quantity,
+                    direction=order.direction,
+                    order_id=order.id
+                )
+                order.order_id = new_order.order_id
 
             self.orders.append(order)
             write_file(order)
@@ -95,26 +138,47 @@ class OrderService(threading.Thread):
         except Exception as ex:
             logger.error(ex)
 
-    def close_order(self, order):
+    def close_order(self, order, close_price):
+        order.status = 'close'
+        order.close = close_price
+        if order.direction == OrderDirection.ORDER_DIRECTION_BUY.value:
+            order.result = order.close - order.open
+            order.is_win = order.result > 0
+        else:
+            order.result = order.open - order.close
+            order.is_win = order.result > 0
+
+        if order.is_win:
+            logger.info(f'закрыта заявка по тейк-профиту с результатом {order.result}; открыта в {order.time}')
+        else:
+            logger.info(f'закрыта заявка по стоп-лоссу с результатом {order.result}; открыта в {order.time}')
+
+        if self.is_open_orders:
+            instrument = get_instrument_by_name(order.instrument)
+            # закрываю сделку обратным ордером
+            reverse_direction = OrderDirection.ORDER_DIRECTION_BUY.value
+            if order.direction == OrderDirection.ORDER_DIRECTION_BUY.value:
+                reverse_direction = OrderDirection.ORDER_DIRECTION_SELL.value
+
+            open_order(
+                figi=instrument['future'],
+                quantity=order.quantity,
+                direction=reverse_direction,
+                order_id=f'{order.id}-close'
+            )
+
+        # перезаписываю файл с результатами сделок
+        # todo перенести хранение сделок в БД
+        rewrite_file(self.orders)
         if self.is_notification:
-            self.telegram_service.post(
-                f"закрыта позиция на {order['instrument']}: результат {order['result']}")
+            self.telegram_service.post(f"закрыта позиция на {order.instrument}: результат {order.result}")
 
     def processed_orders(self, instrument, current_price, time):
         for order in self.orders:
             if order.status == 'active':
                 if not Utils.is_open_orders(time):
                     # закрытие сделок по причине приближении закрытии биржи
-                    order.status = 'close'
-                    order.close = current_price
-                    if order.direction == OrderDirection.ORDER_DIRECTION_BUY.value:
-                        order.result = order.close - order.open
-                        order.is_win = order.result > 0
-                    else:
-                        order.result = order.open - order.close
-                        order.is_win = order.result > 0
-                    logger.info(f'закрытие открытой заявки [time={order.time}], результат: {order.result}')
-                    self.close_order(order)
+                    self.close_order(order, current_price)
                     continue
 
                 if order.instrument != instrument:
@@ -123,41 +187,17 @@ class OrderService(threading.Thread):
                 if order.direction == OrderDirection.ORDER_DIRECTION_BUY.value:
                     if current_price < order.stop:
                         # закрываю активные buy-заявки по стопу, если цена ниже стоп-лосса
-                        order.status = 'close'
-                        order.close = current_price
-                        order.is_win = False
-                        order.result = order.close - order.open
-                        logger.info(
-                            f'закрыта заявка по стоп-лоссу с результатом {order.result}; открыта в {order.time}, текущее время {time}')
-                        self.close_order(order)
+                        self.close_order(order, current_price)
                     elif current_price > order.take:
-                        # закрываю активные buy-заявки по тейку, если цена выше тейк-профита
-                        order.status = 'close'
-                        order.close = current_price
-                        order.is_win = True
-                        order.result = order.close - order.open
-                        logger.info(
-                            f'закрыта заявка по тейк-профиту с результатом {order.result}; открыта в {order.time}, текущее время {time}')
-                        self.close_order(order)
+                        # закрываю активные buy-заявки по цели, если цена выше заданной цели
+                        self.close_order(order, current_price)
                 else:
                     if current_price > order.stop:
                         # закрываю активные sell-заявки по стопу, если цена выше стоп-лосса
-                        order.status = 'close'
-                        order.close = current_price
-                        order.is_win = False
-                        order.result = order.open - order.close
-                        logger.info(
-                            f'закрыта заявка по стоп-лоссу с результатом {order.result}; открыта в {order.time}, текущее время {time}')
-                        self.close_order(order)
+                        self.close_order(order, current_price)
                     elif current_price < order.take:
-                        # закрываю активные sell-заявки по тейку, если цена ниже тейк-профита
-                        order.status = 'close'
-                        order.close = current_price
-                        order.is_win = True
-                        order.result = order.open - order.close
-                        logger.info(
-                            f'закрыта заявка по тейк-профиту с результатом {order.result}; открыта в {order.time}, текущее время {time}')
-                        self.close_order(order)
+                        # закрываю активные sell-заявки по цели, если цена ниже заданной цели
+                        self.close_order(order, current_price)
 
     def write_statistics(self):
         groups = groupby(self.orders, lambda order: order.instrument)

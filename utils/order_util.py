@@ -27,7 +27,7 @@ def prepare_orders(
             id=str(uuid4()),
             group_id=group_id,
             instrument=instrument,
-            open= current_price,
+            open=current_price,
             stop=stop_loss,
             take=take,
             quantity=quantity,
@@ -39,10 +39,12 @@ def prepare_orders(
     return orders
 
 
-def is_order_already_open(orders: List[Order], order: Order):
+def is_order_already_open(orders: List[Order], order: Order) -> bool:
     active_order = list(filter(
-        lambda item: item.direction == order.direction and
-                     item.status == 'active', orders)
+        lambda item: item.instrument == order.instrument and
+                     item.direction == order.direction and
+                     item.status == 'active',
+        orders)
     )
     if len(active_order) > 0:
         # если уже есть активная заявка, но она с одной группы (точки входа), то считаю ее новой
@@ -52,3 +54,14 @@ def is_order_already_open(orders: List[Order], order: Order):
         # то запрещаю создание новой до тех пор, пока активная заявка не будет закрыта
         return True
     return False
+
+
+# возвращаю текущие открытые сделки, если поступила новая с обратным направлением
+def get_reverse_order(orders: List[Order], order: Order) -> List[Order]:
+    active_order = list(filter(
+        lambda item: item.instrument == order.instrument and
+                     item.status == 'active' and
+                     item.direction != order.direction,
+        orders)
+    )
+    return active_order
