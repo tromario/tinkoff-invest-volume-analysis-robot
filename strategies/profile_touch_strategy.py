@@ -25,11 +25,11 @@ FIVE_MINUTES_TO_SECONDS = 5 * ONE_MINUTE_TO_SECONDS
 
 def apply_frame_type(df):
     return df.astype({
-        'figi': 'object',
-        'direction': 'int64',
-        'price': 'float64',
-        'quantity': 'int64',
-        # 'time': 'datetime64[ms]',
+        "figi": "object",
+        "direction": "int64",
+        "price": "float64",
+        "quantity": "int64",
+        # "time": "datetime64[ms]",
     })
 
 
@@ -40,7 +40,7 @@ class ProfileTouchStrategy(threading.Thread):
 
         self.instrument_name = instrument_name
 
-        self.df = pd.DataFrame(columns=['figi', 'direction', 'price', 'quantity', 'time'])
+        self.df = pd.DataFrame(columns=["figi", "direction", "price", "quantity", "time"])
         self.df = apply_frame_type(self.df)
 
         self.first_tick_time = None
@@ -54,12 +54,12 @@ class ProfileTouchStrategy(threading.Thread):
 
     def set_df(self, df):
         self.df = df
-        logger.info('загружен новый data frame')
+        logger.info("загружен новый data frame")
 
     def analyze(self, trade_df) -> Optional[List[Order]]:
         trade_data = trade_df.iloc[0]
-        current_price = trade_data['price']
-        time = trade_data['time']
+        current_price = trade_data["price"]
+        time = trade_data["time"]
 
         if Utils.is_premarket_time(time):
             return
@@ -80,8 +80,8 @@ class ProfileTouchStrategy(threading.Thread):
 
         if self.clusters is not None:
             for index, cluster in self.clusters.iterrows():
-                cluster_time = cluster['time']
-                cluster_price = cluster['max_volume_price']
+                cluster_time = cluster["time"]
+                cluster_price = cluster["max_volume_price"]
 
                 # цена может коснуться объемного уровня в заданном процентном диапазоне
                 is_price_in_range = Utils.is_price_in_range_cluster(current_price, cluster_price)
@@ -93,23 +93,23 @@ class ProfileTouchStrategy(threading.Thread):
                     if cluster_price not in self.processed_volume_levels:
                         # инициализация первого касания уровня
                         self.processed_volume_levels[cluster_price] = {}
-                        self.processed_volume_levels[cluster_price]['count_touches'] = 0
-                        self.processed_volume_levels[cluster_price]['times'] = {}
+                        self.processed_volume_levels[cluster_price]["count_touches"] = 0
+                        self.processed_volume_levels[cluster_price]["times"] = {}
                     else:
                         # обработка второго и последующего касания уровня на основе времени последнего касания
-                        if self.processed_volume_levels[cluster_price]['last_touch_time'] is not None:
-                            timedelta = time - self.processed_volume_levels[cluster_price]['last_touch_time']
+                        if self.processed_volume_levels[cluster_price]["last_touch_time"] is not None:
+                            timedelta = time - self.processed_volume_levels[cluster_price]["last_touch_time"]
                             if timedelta < datetime.timedelta(minutes=SECOND_TOUCH_VOLUME_LEVEL):
                                 continue
 
                     # установка параметров при касании уровня
-                    self.processed_volume_levels[cluster_price]['count_touches'] += 1
-                    self.processed_volume_levels[cluster_price]['last_touch_time'] = time
-                    self.processed_volume_levels[cluster_price]['times'][time] = None
+                    self.processed_volume_levels[cluster_price]["count_touches"] += 1
+                    self.processed_volume_levels[cluster_price]["last_touch_time"] = time
+                    self.processed_volume_levels[cluster_price]["times"][time] = None
 
-                    logger.info(f'объемный уровень {cluster_price} сформирован в {cluster_time}')
+                    logger.info(f"объемный уровень {cluster_price} сформирован в {cluster_time}")
                     logger.info(
-                        f'{time}: цена {current_price} подошла к объемному уровню {self.processed_volume_levels[cluster_price]["count_touches"]} раз\n'
+                        f"{time}: цена {current_price} подошла к объемному уровню {self.processed_volume_levels[cluster_price]['count_touches']} раз\n"
                     )
                     break
 
@@ -134,7 +134,7 @@ class ProfileTouchStrategy(threading.Thread):
 
     def check_entry_points(self, current_price, time) -> Optional[List[Order]]:
         for volume_price, volume_level in self.processed_volume_levels.items():
-            for touch_time, value in volume_level['times'].items():
+            for touch_time, value in volume_level["times"].items():
                 if value is not None:
                     continue
                 candles = Utils.ticks_to_cluster(self.df, period=SIGNAL_CLUSTER_PERIOD)
@@ -144,32 +144,32 @@ class ProfileTouchStrategy(threading.Thread):
                 # todo подумать, как лучше получать свечи: по условию или индексу
                 #  с условиями сложнее, нужно дополнительно вычислять
                 #  с индексами, с виду, не должно быть проблем, только если возникнет null
-                # prev_candle = candles.loc[candles['time'] == pd.to_datetime(touch_time).floor("10min")]
-                # current_candle = candles.loc[candles['time'] == pd.to_datetime(touch_time).floor(SIGNAL_CLUSTER_PERIOD)]
+                # prev_candle = candles.loc[candles["time"] == pd.to_datetime(touch_time).floor("10min")]
+                # current_candle = candles.loc[candles["time"] == pd.to_datetime(touch_time).floor(SIGNAL_CLUSTER_PERIOD)]
                 if current_candle.empty or prev_candle.empty:
-                    logger.error('свеча не найдена')
+                    logger.error("свеча не найдена")
                     continue
 
-                if current_candle['win'] is True:
+                if current_candle["win"] is True:
                     # если свеча является сигнальной, то осуществляю сделку
-                    max_volume_price = current_candle['max_volume_price']
+                    max_volume_price = current_candle["max_volume_price"]
                     percent = (max_volume_price * PERCENTAGE_STOP_LOSS / 100)
-                    self.processed_volume_levels[volume_price]['times'][touch_time] = True
+                    self.processed_volume_levels[volume_price]["times"][touch_time] = True
 
-                    if current_candle['direction'] == TradeDirection.TRADE_DIRECTION_BUY:
-                        if prev_candle['open'] < current_candle['open']:
-                            logger.info('пропуск входа - предыдущая свеча открылась ниже текущей')
+                    if current_candle["direction"] == TradeDirection.TRADE_DIRECTION_BUY:
+                        if prev_candle["open"] < current_candle["open"]:
+                            logger.info("пропуск входа - предыдущая свеча открылась ниже текущей")
                             return
 
                         # todo условие дает плохое соотношение
                         # если подошли к объемному уровню снизу вверх на лонговой свече, то пропускаю вход
                         # if close_price < volume_price:
-                        #     logger.info(f'пропуск входа - цена закрытия ниже объемного уровня', time, current_price)
+                        #     logger.info(f"пропуск входа - цена закрытия ниже объемного уровня", time, current_price)
                         #     return
 
                         if current_price < max_volume_price:
                             logger.info(
-                                f'пропуск входа - цена открытия ниже макс объема в сигнальной свече, time={time}, price={current_price}')
+                                f"пропуск входа - цена открытия ниже макс объема в сигнальной свече, time={time}, price={current_price}")
                             return
 
                         stop = max_volume_price - percent
@@ -179,23 +179,23 @@ class ProfileTouchStrategy(threading.Thread):
                             stop=stop,
                             direction=OrderDirection.ORDER_DIRECTION_BUY
                         )
-                        logger.info(f'подтверждена точка входа в лонг, ордера: {orders}')
+                        logger.info(f"подтверждена точка входа в лонг, ордера: {orders}")
                         return orders
 
                     else:
-                        if prev_candle['open'] > current_candle['open']:
-                            logger.info('пропуск входа - предыдущая свеча открылась выше текущей')
+                        if prev_candle["open"] > current_candle["open"]:
+                            logger.info("пропуск входа - предыдущая свеча открылась выше текущей")
                             return
 
                         # todo условие дает плохое соотношение
                         # если подошли к объемному уровню сверху вниз на шортовой свече, то пропускаю вход
                         # if close_price > volume_price:
-                        #     logger.info(f'пропуск входа - цена закрытия выше объемного уровня', time, current_price)
+                        #     logger.info(f"пропуск входа - цена закрытия выше объемного уровня", time, current_price)
                         #     return
 
                         if current_price > max_volume_price:
                             logger.info(
-                                f'пропуск входа - цена открытия выше макс объема в сигнальной свече, time={time}, price={current_price}')
+                                f"пропуск входа - цена открытия выше макс объема в сигнальной свече, time={time}, price={current_price}")
                             return
 
                         stop = max_volume_price + percent
@@ -205,13 +205,13 @@ class ProfileTouchStrategy(threading.Thread):
                             stop=stop,
                             direction=OrderDirection.ORDER_DIRECTION_SELL
                         )
-                        logger.info(f'подтверждена точка входа в шорт, ордера: {orders}')
+                        logger.info(f"подтверждена точка входа в шорт, ордера: {orders}")
                         return orders
 
                 else:
                     # если текущая свеча не сигнальная, то ожидаю следующую для возможного входа
-                    self.processed_volume_levels[volume_price]['times'][touch_time] = False
-                    self.processed_volume_levels[volume_price]['last_touch_time'] = None
+                    self.processed_volume_levels[volume_price]["times"][touch_time] = False
+                    self.processed_volume_levels[volume_price]["last_touch_time"] = None
 
     def prepare_orders(self, current_price, time, stop, direction) -> List[Order]:
         return prepare_orders(

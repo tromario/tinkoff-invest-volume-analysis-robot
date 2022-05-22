@@ -12,12 +12,12 @@ pd.options.display.max_columns = None
 pd.options.display.max_rows = None
 pd.options.display.width = None
 
-date = datetime.datetime.now().strftime('%Y-%m-%d')
-format = '%(asctime)s %(levelname)s --- (%(filename)s).%(funcName)s(%(lineno)d):\t %(message)s'
+date = datetime.datetime.now().strftime("%Y-%m-%d")
+format = "%(asctime)s %(levelname)s --- (%(filename)s).%(funcName)s(%(lineno)d):\t %(message)s"
 logging.basicConfig(format=format,
                     level=logging.INFO,
                     handlers=[
-                        logging.FileHandler(f'./logs/log-{date}.log', encoding='utf-8'),
+                        logging.FileHandler(f"./logs/log-{date}.log", encoding="utf-8"),
                         logging.StreamHandler()
                     ])
 logger = logging.getLogger(__name__)
@@ -25,11 +25,11 @@ logger = logging.getLogger(__name__)
 
 def apply_frame_type(df):
     return df.astype({
-        'figi': 'object',
-        'direction': 'int64',
-        'price': 'float64',
-        'quantity': 'int64',
-        # 'time': 'datetime64[ms]',
+        "figi": "object",
+        "direction": "int64",
+        "price": "float64",
+        "quantity": "int64",
+        # "time": "datetime64[ms]",
     })
 
 
@@ -38,7 +38,7 @@ class TestProfileTouchStrategy:
         self.instrument_name = instrument_name
         self.file_path = file_path
 
-        self.df = pd.DataFrame(columns=['figi', 'direction', 'price', 'quantity', 'time'])
+        self.df = pd.DataFrame(columns=["figi", "direction", "price", "quantity", "time"])
         self.df = apply_frame_type(self.df)
 
         self.profile_touch_strategy = ProfileTouchStrategy(instrument_name)
@@ -49,22 +49,22 @@ class TestProfileTouchStrategy:
 
     def run(self):
         test_start_time = datetime.datetime.now()
-        logger.info(f'анализ истории {self.file_path}')
+        logger.info(f"анализ истории {self.file_path}")
 
         with open(self.file_path, newline='') as file:
-            reader = csv.DictReader(file, delimiter=',')
+            reader = csv.DictReader(file, delimiter=",")
             for row in reader:
-                figi = row['figi']
-                price = float(row['price'])
-                time = Utils.parse_date(row['time'])
+                figi = row["figi"]
+                price = float(row["price"])
+                time = Utils.parse_date(row["time"])
 
                 processed_trade_df = pd.DataFrame.from_records([
                     {
-                        'figi': figi,
-                        'direction': row['direction'],
-                        'price': price,
-                        'quantity': row['quantity'],
-                        'time': pd.to_datetime(str(time), utc=True),
+                        "figi": figi,
+                        "direction": row["direction"],
+                        "price": price,
+                        "quantity": row["quantity"],
+                        "time": pd.to_datetime(str(time), utc=True),
                     }
                 ])
                 self.order_service.processed_orders(self.instrument_name, price, time)
@@ -81,39 +81,37 @@ class TestProfileTouchStrategy:
 
         test_end_time = datetime.datetime.now()
         total_test_time = (test_end_time - test_start_time).total_seconds() / 60
-        logger.info('анализ завершен')
-        logger.info(f'время тестирования: {fixed_float(total_test_time)} мин.')
+        logger.info("анализ завершен")
+        logger.info(f"время тестирования: {fixed_float(total_test_time)} мин.")
 
 
 if __name__ == "__main__":
-    usd_histories = {'name': 'USD000UTSTOM',
-                     'files': ['./data/USD000UTSTOM-20220504.csv', './data/USD000UTSTOM-20220505.csv',
-                               './data/USD000UTSTOM-20220506.csv', './data/USD000UTSTOM-20220511.csv',
-                               './data/USD000UTSTOM-20220512.csv', './data/USD000UTSTOM-20220513.csv',
-                               './data/USD000UTSTOM-20220516.csv', './data/USD000UTSTOM-20220517.csv',
-                               './data/USD000UTSTOM-20220518.csv', './data/USD000UTSTOM-20220519.csv',
-                               './data/USD000UTSTOM-20220520.csv']}
+    usd_histories = {"name": "USD000UTSTOM",
+                     "files": ["./data/USD000UTSTOM-20220504.csv", "./data/USD000UTSTOM-20220505.csv",
+                               "./data/USD000UTSTOM-20220506.csv", "./data/USD000UTSTOM-20220511.csv",
+                               "./data/USD000UTSTOM-20220512.csv", "./data/USD000UTSTOM-20220513.csv",
+                               "./data/USD000UTSTOM-20220516.csv", "./data/USD000UTSTOM-20220517.csv",
+                               "./data/USD000UTSTOM-20220518.csv", "./data/USD000UTSTOM-20220519.csv",
+                               "./data/USD000UTSTOM-20220520.csv"]}
 
-    sber_histories = {'name': 'SBER',
-                      'files': ['./data/SBER-20220504.csv', './data/SBER-20220505.csv',
-                                './data/SBER-20220506.csv', './data/SBER-20220511.csv',
-                                './data/SBER-20220512.csv', './data/SBER-20220513.csv',
-                                './data/SBER-20220516.csv', './data/SBER-20220517.csv',
-                                './data/SBER-20220518.csv', './data/SBER-20220519.csv',
-                                './data/SBER-20220520.csv']}
+    sber_histories = {"name": "SBER",
+                      "files": ["./data/SBER-20220504.csv", "./data/SBER-20220505.csv",
+                                "./data/SBER-20220506.csv", "./data/SBER-20220511.csv",
+                                "./data/SBER-20220512.csv", "./data/SBER-20220513.csv",
+                                "./data/SBER-20220516.csv", "./data/SBER-20220517.csv",
+                                "./data/SBER-20220518.csv", "./data/SBER-20220519.csv",
+                                "./data/SBER-20220520.csv"]}
 
-    gaz_histories = {'name': 'GAZP',
-                     'files': ['./data/GAZP-20220504.csv', './data/GAZP-20220505.csv',
-                               './data/GAZP-20220506.csv', './data/GAZP-20220511.csv',
-                               './data/GAZP-20220512.csv', './data/GAZP-20220513.csv',
-                               './data/GAZP-20220516.csv', './data/GAZP-20220517.csv',
-                               './data/GAZP-20220518.csv', './data/GAZP-20220519.csv',
-                               './data/GAZP-20220520.csv']}
+    gaz_histories = {"name": "GAZP",
+                     "files": ["./data/GAZP-20220504.csv", "./data/GAZP-20220505.csv",
+                               "./data/GAZP-20220506.csv", "./data/GAZP-20220511.csv",
+                               "./data/GAZP-20220512.csv", "./data/GAZP-20220513.csv",
+                               "./data/GAZP-20220516.csv", "./data/GAZP-20220517.csv"]}
 
-    histories = [usd_histories] + [sber_histories] + [gaz_histories]
+    histories = [gaz_histories]
     total_result = 0
 
     for history in histories:
-        for file_path in history['files']:
-            tester = TestProfileTouchStrategy(history['name'], file_path)
+        for file_path in history["files"]:
+            tester = TestProfileTouchStrategy(history["name"], file_path)
             tester.run()

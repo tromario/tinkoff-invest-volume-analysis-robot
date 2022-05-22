@@ -22,12 +22,12 @@ pd.options.display.max_columns = None
 pd.options.display.max_rows = None
 pd.options.display.width = None
 
-date = datetime.now().strftime('%Y-%m-%d')
-format = '%(asctime)s %(levelname)s --- (%(filename)s).%(funcName)s(%(lineno)d):\t %(message)s'
+date = datetime.now().strftime("%Y-%m-%d")
+format = "%(asctime)s %(levelname)s --- (%(filename)s).%(funcName)s(%(lineno)d):\t %(message)s"
 logging.basicConfig(format=format,
                     level=logging.INFO,
                     handlers=[
-                        logging.FileHandler(f'./logs/log-{date}.log', encoding='utf-8'),
+                        logging.FileHandler(f"./logs/log-{date}.log", encoding="utf-8"),
                         logging.StreamHandler()
                     ])
 logger = logging.getLogger(__name__)
@@ -60,12 +60,12 @@ async def request_iterator():
 
 
 def get_file_path_by_instrument(instrument):
-    return f'./data/{instrument["name"]}-{datetime.now().strftime("%Y%m%d")}.csv'
+    return f"./data/{instrument['name']}-{datetime.now().strftime('%Y%m%d')}.csv"
 
 
 def create_empty_df():
-    df = pd.DataFrame(columns=['figi', 'direction', 'price', 'quantity', 'time'])
-    df.time = pd.to_datetime(df.time, unit='ms')
+    df = pd.DataFrame(columns=["figi", "direction", "price", "quantity", "time"])
+    df.time = pd.to_datetime(df.time, unit="ms")
     df.price = pd.to_numeric(df.price)
     df.quantity = pd.to_numeric(df.quantity)
     return df
@@ -80,11 +80,11 @@ def processed_data(trade):
         price = Utils.quotation_to_float(trade.price)
         data = pd.DataFrame.from_records([
             {
-                'figi': trade.figi,
-                'direction': trade.direction,
-                'price': price,
-                'quantity': trade.quantity,
-                'time': pd.to_datetime(str(trade.time), utc=True)
+                "figi": trade.figi,
+                "direction": trade.direction,
+                "price": price,
+                "quantity": trade.quantity,
+                "time": pd.to_datetime(str(trade.time), utc=True)
             }
         ])
 
@@ -109,15 +109,15 @@ class TradingRobot:
         self.df_by_instrument = {}
         self.strategy = {}
         for instrument in INSTRUMENTS:
-            figi = instrument['figi']
+            figi = instrument["figi"]
             df_by_instrument = create_empty_df()
             self.df_by_instrument[figi] = df_by_instrument
 
             file_path = get_file_path_by_instrument(instrument)
-            instrument_file = open(file_path, 'a', newline='')
-            df_by_instrument.to_csv(instrument_file, mode='a', header=instrument_file.tell() == 0, index=False)
+            instrument_file = open(file_path, "a", newline='')
+            df_by_instrument.to_csv(instrument_file, mode="a", header=instrument_file.tell() == 0, index=False)
 
-            profile_touch_strategy = ProfileTouchStrategy(instrument['name'])
+            profile_touch_strategy = ProfileTouchStrategy(instrument["name"])
             profile_touch_strategy.start()
             self.strategy[figi] = profile_touch_strategy
 
@@ -125,11 +125,11 @@ class TradingRobot:
         self.is_history_processed = True
         for instrument in INSTRUMENTS:
             try:
-                figi = instrument['figi']
+                figi = instrument["figi"]
 
                 file_path = get_file_path_by_instrument(instrument)
-                self.df_by_instrument[figi] = pd.read_csv(file_path, sep=',')
-                self.df_by_instrument[figi]['time'] = pd.to_datetime(self.df_by_instrument[figi]['time'], utc=True)
+                self.df_by_instrument[figi] = pd.read_csv(file_path, sep=",")
+                self.df_by_instrument[figi]["time"] = pd.to_datetime(self.df_by_instrument[figi]["time"], utc=True)
 
                 history_df = await self.get_history_trades(client, instrument)
                 self.df_by_instrument[figi] = Utils.merge_two_frames(self.df_by_instrument[figi], history_df)
@@ -140,7 +140,7 @@ class TradingRobot:
     # загрузка последних доступных обезличенных сделок
     async def get_history_trades(self, client, instrument):
         history_df = create_empty_df()
-        figi = instrument['figi']
+        figi = instrument["figi"]
         current_date = now()
         time = 0
 
@@ -150,15 +150,15 @@ class TradingRobot:
                 interval_to = current_date - timedelta(minutes=time)
 
                 logger.info(instrument)
-                logger.info(f'from {interval_from}')
-                logger.info(f'to {interval_to}')
+                logger.info(f"from {interval_from}")
+                logger.info(f"to {interval_to}")
 
                 response = await client.market_data.get_last_trades(
                     figi=figi,
                     from_=interval_from,
                     to=interval_to,
                 )
-                logger.info(f'{instrument} size = {len(response.trades)}')
+                logger.info(f"{instrument} size = {len(response.trades)}")
                 if response is None or len(response.trades) == 0:
                     break
 
@@ -166,7 +166,7 @@ class TradingRobot:
                     processed_trade_df = processed_data(trade)
                     if processed_trade_df is not None:
                         history_df = pd.concat([history_df, processed_trade_df])
-                history_df = history_df.sort_values('time')
+                history_df = history_df.sort_values("time")
                 time += TIME_STEP
             except Exception as ex:
                 logger.error(ex)
@@ -177,14 +177,14 @@ class TradingRobot:
     async def trades_stream(self, client):
         temp_df = {}
         for instrument in INSTRUMENTS:
-            temp_df[instrument['figi']] = create_empty_df()
+            temp_df[instrument["figi"]] = create_empty_df()
 
         try:
             async for marketdata in client.market_data_stream.market_data_stream(
                     request_iterator()
             ):
                 if not is_open_exchange():
-                    logger.info('торговый день завершен, сохранение статистики')
+                    logger.info("торговый день завершен, сохранение статистики")
                     self.order_service.write_statistics()
                     # добавить выход из приложения
 
@@ -218,7 +218,7 @@ class TradingRobot:
                             self.strategy[figi].set_df(self.df_by_instrument[figi])
 
                             file_path = get_file_path_by_instrument(instrument)
-                            self.df_by_instrument[figi].to_csv(file_path, mode='w', header=True, index=False)
+                            self.df_by_instrument[figi].to_csv(file_path, mode="w", header=True, index=False)
                         else:
                             # отправляю обезличенную сделку на анализ
                             # (алгоритм анализа можно заменить на любой)
@@ -231,7 +231,7 @@ class TradingRobot:
                             self.df_by_instrument[figi] = pd.concat(next_df, ignore_index=True)
 
                         file_path = get_file_path_by_instrument(instrument)
-                        processed_trade_df.to_csv(file_path, mode='a', header=False, index=False)
+                        processed_trade_df.to_csv(file_path, mode="a", header=False, index=False)
         except Exception as ex:
             logger.error(ex)
 

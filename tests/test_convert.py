@@ -12,5 +12,5 @@ class TestConvert(unittest.TestCase):
         self.assertEqual(Utils.quotation_to_float(Quotation(0, 37180000)), 0.037180)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

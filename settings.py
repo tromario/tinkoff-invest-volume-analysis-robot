@@ -1,25 +1,27 @@
 # region общие настройки робота
 # токен профиля в Тинькофф Инвестиций
-TOKEN = ''
+TOKEN = ""
 
 # используется песочница или реальный счет
 IS_SANDBOX = True
 
 # счет для торговли в песочнице
-SANDBOX_ACCOUNT_ID = ''
+SANDBOX_ACCOUNT_ID = ""
 
 # счет для торговли на реальном счете
 REAL_ACCOUNT_ID = ''
 
 # массив анализируемых инструментов
 INSTRUMENTS = [
-    {'name': 'USD000UTSTOM', 'alias': 'USD/RUB', 'figi': 'BBG0013HGFT4', 'future': 'BBG00VHGV1J0'},
-    {'name': 'SBER', 'figi': 'BBG004730N88', 'future': 'FUTSBRF06220'},
-    {'name': 'GAZP', 'figi': 'BBG004730RP0', 'future': 'FUTGAZR06220'},
+    {"name": "USD000UTSTOM", "alias": "USD/RUB", "figi": "BBG0013HGFT4", "future": "BBG00VHGV1J0"},
+    {"name": "SBER", "figi": "BBG004730N88", "future": "FUTSBRF06220"},
+    {"name": "GAZP", "figi": "BBG004730RP0", "future": "FUTGAZR06220"},
 ]
 
 # приложение выступает в роли советника или робота с открытием позиций
 CAN_OPEN_ORDERS = True
+
+CAN_REVERSE_ORDER = False
 
 # количество лотов на 1 точку входа
 COUNT_LOTS = 2
@@ -45,17 +47,17 @@ IS_SHOW_CHART = False
 
 # отправка уведомлений в чат телеграм
 NOTIFICATION = {
-    'bot_token': '',
-    'chat_id': ''
+    "bot_token": "",
+    "chat_id": ""
 }
 # endregion общие настройки робота
 
 # region настройки стратегии
 # период профиля рынка
-PROFILE_PERIOD = '1h'
+PROFILE_PERIOD = "1h"
 
 # ТФ сигнальной свечи для рассмотрения ТВ
-SIGNAL_CLUSTER_PERIOD = '5min'
+SIGNAL_CLUSTER_PERIOD = "5min"
 
 # время в минутах, через которое можем рассматривать первое касание объемного уровня
 FIRST_TOUCH_VOLUME_LEVEL = 90

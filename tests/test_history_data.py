@@ -8,17 +8,17 @@ if __name__ == "__main__":
     prev_time = None
 
     file_paths = [
-        './data/USD000UTSTOM-20220520.csv',
-        './data/SBER-20220520.csv',
-        './data/GAZP-20220520.csv'
+        "./data/USD000UTSTOM-20220520.csv",
+        "./data/SBER-20220520.csv",
+        "./data/GAZP-20220520.csv"
     ]
 
     for file_path in file_paths:
         with open(file_path, newline='') as file:
-            reader = csv.DictReader(file, delimiter=',')
+            reader = csv.DictReader(file, delimiter=",")
             for row in reader:
-                current_price = float(row['price'])
-                time = Utils.parse_date(row['time'])
+                current_price = float(row["price"])
+                time = Utils.parse_date(row["time"])
 
                 if prev_time is None:
                     prev_time = time

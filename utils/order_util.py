@@ -43,7 +43,7 @@ def is_order_already_open(orders: List[Order], order: Order) -> bool:
     active_order = list(filter(
         lambda item: item.instrument == order.instrument and
                      item.direction == order.direction and
-                     item.status == 'active',
+                     item.status == "active",
         orders)
     )
     if len(active_order) > 0:
@@ -60,7 +60,7 @@ def is_order_already_open(orders: List[Order], order: Order) -> bool:
 def get_reverse_order(orders: List[Order], order: Order) -> List[Order]:
     active_order = list(filter(
         lambda item: item.instrument == order.instrument and
-                     item.status == 'active' and
+                     item.status == "active" and
                      item.direction != order.direction,
         orders)
     )
