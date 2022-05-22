@@ -17,7 +17,9 @@ class FinplotGraph(threading.Thread):
         self.ax = None
 
     def run(self):
-        self.ax = fplt.create_plot('Tinkoff Invest volume profile tester')
+        self.ax = fplt.create_plot('Tinkoff Invest profile touch strategy', maximize=False)
+        self.ax.setLabel('right', 'Цена')
+        self.ax.setLabel('bottom', 'Дата')
         fplt.show()
 
     def render(self, df, valid_entry_points, invalid_entry_points, clusters=None):
