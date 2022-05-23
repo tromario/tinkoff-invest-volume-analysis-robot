@@ -33,20 +33,6 @@ def merge_two_frames(
     return result_df.sort_values(["time", "index"]).reset_index(drop=True)
 
 
-def agg_ohlc(df: pd.DataFrame) -> pd.Series:
-    price = df["price"].values
-    quantity = df["quantity"].values
-    names = {
-        "low": min(price) if len(price) > 0 else np.nan,
-        "high": max(price) if len(price) > 0 else np.nan,
-        "open": price[0] if len(price) > 0 else np.nan,
-        "close": price[-1] if len(price) > 0 else np.nan,
-        "total_volume": sum(quantity) if len(quantity) > 0 else 0,
-        "max_volume_price": df.groupby(["price"])[["quantity"]].sum().idxmax()[0]
-    }
-    return pd.Series(names)
-
-
 def calculate_ratio(candles: pd.DataFrame) -> pd.DataFrame:
     # процентное соотношение лонгистов/шортистов в свече
     difference = candles["high"] - candles["low"]
@@ -71,6 +57,28 @@ def calculate_ratio(candles: pd.DataFrame) -> pd.DataFrame:
             candles["percent"] <= 40)
 
     return candles
+
+
+def agg_ohlc(df: pd.DataFrame) -> pd.Series:
+    if df.empty:
+        return pd.Series({
+            "low": np.nan,
+            "high": np.nan,
+            "open": np.nan,
+            "close": np.nan,
+            "total_volume": np.nan,
+            "max_volume_price": np.nan
+        })
+    price = df["price"].values
+    quantity = df["quantity"].values
+    return pd.Series({
+        "low": min(price),
+        "high": max(price),
+        "open": price[0],
+        "close": price[-1],
+        "total_volume": sum(quantity),
+        "max_volume_price": df.groupby(["price"])[["quantity"]].sum().idxmax()[0]
+    })
 
 
 def ticks_to_cluster(
