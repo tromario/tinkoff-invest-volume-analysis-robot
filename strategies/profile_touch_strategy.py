@@ -6,31 +6,21 @@ from typing import List, Optional
 import pandas as pd
 from tinkoff.invest import TradeDirection, OrderDirection
 
+from constants import FIVE_MINUTES_TO_SECONDS
 from domains.order import Order
+from utils.exchange_util import is_open_orders, is_premarket_time
 from visualizers.finplot_graph import FinplotGraph
 from settings import PROFILE_PERIOD, FIRST_TOUCH_VOLUME_LEVEL, SECOND_TOUCH_VOLUME_LEVEL, FIRST_GOAL, \
     PERCENTAGE_STOP_LOSS, SIGNAL_CLUSTER_PERIOD, IS_SHOW_CHART, GOAL_STEP, COUNT_LOTS, COUNT_GOALS
 from utils.order_util import prepare_orders
-from utils.utils import Utils
+from utils.strategy_util import is_price_in_range_cluster, ticks_to_cluster, calculate_ratio, \
+    processed_volume_levels_to_times, apply_frame_type
 
 pd.options.display.max_columns = None
 pd.options.display.max_rows = None
 pd.options.display.width = None
 
 logger = logging.getLogger(__name__)
-
-ONE_MINUTE_TO_SECONDS = 60
-FIVE_MINUTES_TO_SECONDS = 5 * ONE_MINUTE_TO_SECONDS
-
-
-def apply_frame_type(df):
-    return df.astype({
-        "figi": "object",
-        "direction": "int64",
-        "price": "float64",
-        "quantity": "int64",
-        # "time": "datetime64[ms]",
-    })
 
 
 # стратегия касание объемного уровня
@@ -61,7 +51,7 @@ class ProfileTouchStrategy(threading.Thread):
         current_price = trade_data["price"]
         time = trade_data["time"]
 
-        if Utils.is_premarket_time(time):
+        if is_premarket_time(time):
             return
 
         if PROFILE_PERIOD not in self.fix_date:
@@ -84,7 +74,7 @@ class ProfileTouchStrategy(threading.Thread):
                 cluster_price = cluster["max_volume_price"]
 
                 # цена может коснуться объемного уровня в заданном процентном диапазоне
-                is_price_in_range = Utils.is_price_in_range_cluster(current_price, cluster_price)
+                is_price_in_range = is_price_in_range_cluster(current_price, cluster_price)
                 if is_price_in_range:
                     timedelta = time - cluster_time
                     if timedelta < datetime.timedelta(minutes=FIRST_TOUCH_VOLUME_LEVEL):
@@ -117,14 +107,14 @@ class ProfileTouchStrategy(threading.Thread):
             # сбрасываю секунды, чтобы сравнивать завершенные свечи
             self.first_tick_time = time.replace(second=0, microsecond=0)
             # если торги доступны, то каждую завершенную минуту проверяю кластера на возможную ТВ
-            if Utils.is_open_orders(time) and len(self.processed_volume_levels) > 0:
+            if is_open_orders(time) and len(self.processed_volume_levels) > 0:
                 return self.check_entry_points(current_price, time)
 
     def calculate_clusters(self):
         if self.df.empty:
             return
-        self.clusters = Utils.ticks_to_cluster(self.df, period=PROFILE_PERIOD)
-        valid_entry_points, invalid_entry_points = Utils.processed_volume_levels_to_times(
+        self.clusters = ticks_to_cluster(self.df, period=PROFILE_PERIOD)
+        valid_entry_points, invalid_entry_points = processed_volume_levels_to_times(
             self.processed_volume_levels)
         if IS_SHOW_CHART:
             self.visualizer.render(self.df,
@@ -137,8 +127,8 @@ class ProfileTouchStrategy(threading.Thread):
             for touch_time, value in volume_level["times"].items():
                 if value is not None:
                     continue
-                candles = Utils.ticks_to_cluster(self.df, period=SIGNAL_CLUSTER_PERIOD)
-                candles = Utils.calculate_ratio(candles)
+                candles = ticks_to_cluster(self.df, period=SIGNAL_CLUSTER_PERIOD)
+                candles = calculate_ratio(candles)
                 prev_candle = candles.iloc[-3]
                 current_candle = candles.iloc[-2]
                 # todo подумать, как лучше получать свечи: по условию или индексу
@@ -163,8 +153,8 @@ class ProfileTouchStrategy(threading.Thread):
 
                         # todo условие дает плохое соотношение
                         # если подошли к объемному уровню снизу вверх на лонговой свече, то пропускаю вход
-                        # if close_price < volume_price:
-                        #     logger.info(f"пропуск входа - цена закрытия ниже объемного уровня", time, current_price)
+                        # if current_candle['close'] < volume_price:
+                        #     logger.info(f"пропуск входа - цена закрытия ниже объемного уровня, time={time}, price={current_price}")
                         #     return
 
                         if current_price < max_volume_price:
@@ -189,8 +179,8 @@ class ProfileTouchStrategy(threading.Thread):
 
                         # todo условие дает плохое соотношение
                         # если подошли к объемному уровню сверху вниз на шортовой свече, то пропускаю вход
-                        # if close_price > volume_price:
-                        #     logger.info(f"пропуск входа - цена закрытия выше объемного уровня", time, current_price)
+                        # if current_candle['close'] > volume_price:
+                        #     logger.info(f"пропуск входа - цена закрытия выше объемного уровня, time={time}, price={current_price}")
                         #     return
 
                         if current_price > max_volume_price:

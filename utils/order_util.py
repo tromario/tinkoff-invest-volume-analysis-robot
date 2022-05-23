@@ -4,6 +4,7 @@ from uuid import uuid4
 from domains.order import Order
 
 
+# подготовка списка ордеров для открытия сделки
 def prepare_orders(
         instrument,
         current_price,

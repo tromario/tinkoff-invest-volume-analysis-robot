@@ -5,7 +5,7 @@ import finplot as fplt
 import numpy as np
 import pandas as pd
 
-from utils.utils import Utils
+from utils.strategy_util import ticks_to_cluster
 
 
 class FinplotGraph(threading.Thread):
@@ -23,7 +23,7 @@ class FinplotGraph(threading.Thread):
         fplt.show()
 
     def render(self, df, valid_entry_points, invalid_entry_points, clusters=None):
-        candles = Utils.ticks_to_cluster(df, period=self.signal_cluster_period)
+        candles = ticks_to_cluster(df, period=self.signal_cluster_period)
 
         # риски в свечах с максимальными объемами
         max_volumes = candles[["time", "max_volume_price"]]

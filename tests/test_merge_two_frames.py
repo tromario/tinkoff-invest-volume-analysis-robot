@@ -3,7 +3,7 @@ import unittest
 import pandas as pd
 from pandas.util.testing import assert_frame_equal
 
-from utils.utils import Utils
+from utils.strategy_util import merge_two_frames
 
 
 class TestMergeTwoFrames(unittest.TestCase):
@@ -129,12 +129,12 @@ class TestMergeTwoFrames(unittest.TestCase):
              "time": "2022-05-06 07:03:55.090231+00:00"}
         ]
         expected_df = pd.DataFrame(expected, columns=["figi", "direction", "price", "quantity", "time"])
-        assert_frame_equal(Utils.merge_two_frames(self.source_df, self.response_df), expected_df)
+        assert_frame_equal(merge_two_frames(self.source_df, self.response_df), expected_df)
 
     def test_boundary(self):
-        assert_frame_equal(Utils.merge_two_frames(self.source_df, self.empty_df), self.source_df)
-        assert_frame_equal(Utils.merge_two_frames(self.empty_df, self.response_df), self.response_df)
-        assert_frame_equal(Utils.merge_two_frames(self.empty_df, self.empty_df), self.empty_df)
+        assert_frame_equal(merge_two_frames(self.source_df, self.empty_df), self.source_df)
+        assert_frame_equal(merge_two_frames(self.empty_df, self.response_df), self.response_df)
+        assert_frame_equal(merge_two_frames(self.empty_df, self.empty_df), self.empty_df)
 
 
 if __name__ == "__main__":

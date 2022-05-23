@@ -1,6 +1,6 @@
 import csv
 
-from utils.utils import Utils
+from utils.format_util import parse_date
 
 # проверяет корректность файлов с историческими данными на основе последовательности даты-времени
 # в случае ошибки будет выведена строка, с которой начинается сбой последовательности
@@ -18,7 +18,7 @@ if __name__ == "__main__":
             reader = csv.DictReader(file, delimiter=",")
             for row in reader:
                 current_price = float(row["price"])
-                time = Utils.parse_date(row["time"])
+                time = parse_date(row["time"])
 
                 if prev_time is None:
                     prev_time = time

@@ -13,10 +13,12 @@ from tinkoff.invest import (
 )
 from tinkoff.invest.utils import now
 
+from services.order_service import OrderService
+from services.user_service import UserService
 from settings import INSTRUMENTS, CAN_OPEN_ORDERS, TOKEN
 from strategies.profile_touch_strategy import ProfileTouchStrategy
-from services.order_service import OrderService
-from utils.utils import Utils
+from utils.format_util import quotation_to_float
+from utils.strategy_util import merge_two_frames
 
 pd.options.display.max_columns = None
 pd.options.display.max_rows = None
@@ -77,7 +79,7 @@ def processed_data(trade):
         if trade is None:
             return
 
-        price = Utils.quotation_to_float(trade.price)
+        price = quotation_to_float(trade.price)
         data = pd.DataFrame.from_records([
             {
                 "figi": trade.figi,
@@ -132,7 +134,7 @@ class TradingRobot:
                 self.df_by_instrument[figi]["time"] = pd.to_datetime(self.df_by_instrument[figi]["time"], utc=True)
 
                 history_df = await self.get_history_trades(client, instrument)
-                self.df_by_instrument[figi] = Utils.merge_two_frames(self.df_by_instrument[figi], history_df)
+                self.df_by_instrument[figi] = merge_two_frames(self.df_by_instrument[figi], history_df)
             except Exception as ex:
                 logger.error(ex)
         self.is_history_processed = False
@@ -200,6 +202,12 @@ class TradingRobot:
 
                 processed_trade_df = processed_data(trade)
                 if processed_trade_df is not None:
+                    # проверка позиций на закрытие по тейку/стопу
+                    processed_trade = processed_trade_df.iloc[0]
+                    price = processed_trade["price"]
+                    time = processed_trade["time"]
+                    self.order_service.processed_orders(instrument["name"], price, time)
+
                     if self.is_history_processed is True:
                         # пока происходит обработка истории - новые данные складываю во временную переменную
                         next_df = [temp_df[figi], processed_trade_df]
@@ -236,6 +244,8 @@ class TradingRobot:
             logger.error(ex)
 
     async def main(self):
+        UserService().show_settings()
+
         async with AsyncClient(TOKEN) as client:
             tasks = [asyncio.ensure_future(self.trades_stream(client)),
                      asyncio.ensure_future(self.sync_df(client))]

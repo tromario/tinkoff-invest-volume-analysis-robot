@@ -9,9 +9,10 @@ from tinkoff.invest import Client, OrderType, OrderDirection
 
 from domains.order import Order
 from services.telegram_service import TelegramService
-from settings import NOTIFICATION, SANDBOX_ACCOUNT_ID, TOKEN, IS_SANDBOX, REAL_ACCOUNT_ID, CAN_REVERSE_ORDER
+from settings import NOTIFICATION, ACCOUNT_ID, TOKEN, IS_SANDBOX, CAN_REVERSE_ORDER
+from utils.exchange_util import is_open_orders, get_instrument_by_name
 from utils.order_util import is_order_already_open, get_reverse_order
-from utils.utils import Utils, fixed_float, get_instrument_by_name
+from utils.format_util import fixed_float
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +71,7 @@ def open_order(figi, quantity, direction, order_id, order_type=OrderType.ORDER_T
         #  сервер не позволит выполнить моментально 100 запросов
         if IS_SANDBOX:
             close_order = client.sandbox.post_sandbox_order(
-                account_id=SANDBOX_ACCOUNT_ID,
+                account_id=ACCOUNT_ID,
                 figi=figi,
                 quantity=quantity,
                 direction=direction,
@@ -79,7 +80,7 @@ def open_order(figi, quantity, direction, order_id, order_type=OrderType.ORDER_T
             )
         else:
             close_order = client.orders.post_order(
-                account_id=REAL_ACCOUNT_ID,
+                account_id=ACCOUNT_ID,
                 figi=figi,
                 quantity=quantity,
                 direction=direction,
@@ -177,7 +178,7 @@ class OrderService(threading.Thread):
     def processed_orders(self, instrument, current_price, time):
         for order in self.orders:
             if order.status == "active":
-                if not Utils.is_open_orders(time):
+                if not is_open_orders(time):
                     # закрытие сделок по причине приближении закрытии биржи
                     self.close_order(order, current_price)
                     continue

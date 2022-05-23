@@ -4,9 +4,11 @@ import logging
 
 import pandas as pd
 
-from strategies.profile_touch_strategy import ProfileTouchStrategy
 from services.order_service import OrderService
-from utils.utils import Utils, fixed_float
+from strategies.profile_touch_strategy import ProfileTouchStrategy
+from utils.format_util import parse_date
+from utils.format_util import fixed_float
+from utils.strategy_util import apply_frame_type
 
 pd.options.display.max_columns = None
 pd.options.display.max_rows = None
@@ -21,16 +23,6 @@ logging.basicConfig(format=format,
                         logging.StreamHandler()
                     ])
 logger = logging.getLogger(__name__)
-
-
-def apply_frame_type(df):
-    return df.astype({
-        "figi": "object",
-        "direction": "int64",
-        "price": "float64",
-        "quantity": "int64",
-        # "time": "datetime64[ms]",
-    })
 
 
 class TestProfileTouchStrategy:
@@ -56,7 +48,7 @@ class TestProfileTouchStrategy:
             for row in reader:
                 figi = row["figi"]
                 price = float(row["price"])
-                time = Utils.parse_date(row["time"])
+                time = parse_date(row["time"])
 
                 processed_trade_df = pd.DataFrame.from_records([
                     {
@@ -99,14 +91,16 @@ if __name__ == "__main__":
                                 "./data/SBER-20220506.csv", "./data/SBER-20220511.csv",
                                 "./data/SBER-20220512.csv", "./data/SBER-20220513.csv",
                                 "./data/SBER-20220516.csv", "./data/SBER-20220517.csv",
-                                "./data/SBER-20220518.csv", "./data/SBER-20220519.csv",
+                                "./data/SBER-20220518.csv", "./data/SBER-20220519.csv",  # проверить
                                 "./data/SBER-20220520.csv"]}
 
     gaz_histories = {"name": "GAZP",
                      "files": ["./data/GAZP-20220504.csv", "./data/GAZP-20220505.csv",
                                "./data/GAZP-20220506.csv", "./data/GAZP-20220511.csv",
                                "./data/GAZP-20220512.csv", "./data/GAZP-20220513.csv",
-                               "./data/GAZP-20220516.csv", "./data/GAZP-20220517.csv"]}
+                               "./data/GAZP-20220516.csv", "./data/GAZP-20220517.csv",
+                               "./data/GAZP-20220518.csv", "./data/GAZP-20220519.csv",
+                               "./data/GAZP-20220520.csv", ]}
 
     histories = [gaz_histories]
     total_result = 0
