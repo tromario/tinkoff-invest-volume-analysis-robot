@@ -8,6 +8,7 @@ from typing import List
 
 from tinkoff.invest import Client, OrderType, OrderDirection
 
+from constants import APP_NAME
 from domains.order import Order
 from services.telegram_service import TelegramService
 from settings import NOTIFICATION, ACCOUNT_ID, TOKEN, IS_SANDBOX, CAN_REVERSE_ORDER
@@ -73,29 +74,32 @@ def open_order(
         order_id: str,
         order_type: OrderType = OrderType.ORDER_TYPE_MARKET
 ):
-    with Client(TOKEN) as client:
-        # todo может возникнуть ситуация, когда будет создано 100 позиций с 1 лотом в каждой
-        #  сервер не позволит выполнить моментально 100 запросов
-        if IS_SANDBOX:
-            close_order = client.sandbox.post_sandbox_order(
-                account_id=ACCOUNT_ID,
-                figi=figi,
-                quantity=quantity,
-                direction=direction,
-                order_type=order_type,
-                order_id=order_id
-            )
-        else:
-            close_order = client.orders.post_order(
-                account_id=ACCOUNT_ID,
-                figi=figi,
-                quantity=quantity,
-                direction=direction,
-                order_type=order_type,
-                order_id=order_id
-            )
-        logger.info(close_order)
-        return close_order
+    with Client(TOKEN, app_name=APP_NAME) as client:
+        try:
+            # todo может возникнуть ситуация, когда будет создано 100 позиций с 1 лотом в каждой
+            #  сервер не позволит выполнить моментально 100 запросов
+            if IS_SANDBOX:
+                close_order = client.sandbox.post_sandbox_order(
+                    account_id=ACCOUNT_ID,
+                    figi=figi,
+                    quantity=quantity,
+                    direction=direction,
+                    order_type=order_type,
+                    order_id=order_id
+                )
+            else:
+                close_order = client.orders.post_order(
+                    account_id=ACCOUNT_ID,
+                    figi=figi,
+                    quantity=quantity,
+                    direction=direction,
+                    order_type=order_type,
+                    order_id=order_id
+                )
+            logger.info(close_order)
+            return close_order
+        except Exception as ex:
+            logger.error(ex)
 
 
 # в отдельном потоке, чтобы не замедлял процесс обработки
