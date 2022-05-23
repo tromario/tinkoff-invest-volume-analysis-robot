@@ -22,7 +22,13 @@ class FinplotGraph(threading.Thread):
         self.ax.setLabel("bottom", "Дата / время")
         fplt.show()
 
-    def render(self, df, valid_entry_points, invalid_entry_points, clusters=None):
+    def render(
+            self,
+            df: pd.DataFrame,
+            valid_entry_points,
+            invalid_entry_points,
+            clusters=None
+    ):
         candles = ticks_to_cluster(df, period=self.signal_cluster_period)
 
         # риски в свечах с максимальными объемами

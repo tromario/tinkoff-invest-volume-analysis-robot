@@ -1,48 +1,32 @@
+from datetime import datetime
 from typing import Dict
 
-import pandas as pd
-
-
-def get_float_value(dictionary: Dict, key):
-    if key in dictionary:
-        return float(dictionary.get(key))
-    return 0
-
-
-def get_int_value(dictionary: Dict, key):
-    if key in dictionary:
-        return int(dictionary.get(key))
-    return 0
-
-
-def get_datetime_value(dictionary: Dict, key):
-    if key in dictionary:
-        return pd.to_datetime(dictionary.get(key))
-    return None
+from utils.parse_util import get_float_from_dict, get_int_value, get_datetime_value
 
 
 class Order(object):
     order_id = None
-    close = 0
-    result = 0
-    is_win = False
-    status = "active"
+    close: float = 0
+    result: float = 0
+    is_win: bool = False
+    # todo перейти на enum
+    status: str = "active"
 
     def __init__(
             self,
-            id,
-            group_id,
-            instrument,
-            open,
-            stop,
-            take,
-            quantity,
-            direction,
-            time,
-            status="active",
-            result=0,
-            is_win=False,
-            close=0
+            id: str,
+            group_id: str,
+            instrument: str,
+            open: float,
+            stop: float,
+            take: float,
+            quantity: int,
+            direction: int,
+            time: datetime,
+            status: str = "active",
+            result: float = 0,
+            is_win: bool = False,
+            close: float = 0
     ):
         self.id = id
         self.group_id = group_id
@@ -135,14 +119,14 @@ class Order(object):
             id=order_dict.get("id"),
             group_id=order_dict.get("group_id"),
             instrument=order_dict.get("instrument"),
-            open=get_float_value(order_dict, "open"),
-            close=get_float_value(order_dict, "close"),
-            stop=get_float_value(order_dict, "stop"),
-            take=get_float_value(order_dict, "take"),
+            open=get_float_from_dict(order_dict, "open"),
+            close=get_float_from_dict(order_dict, "close"),
+            stop=get_float_from_dict(order_dict, "stop"),
+            take=get_float_from_dict(order_dict, "take"),
             quantity=get_int_value(order_dict, "quantity"),
             direction=get_int_value(order_dict, "direction"),
             time=get_datetime_value(order_dict, "time"),
             status=order_dict.get("status"),
-            result=get_float_value(order_dict, "result"),
+            result=get_float_from_dict(order_dict, "result"),
             is_win=order_dict.get("is_win")
         )

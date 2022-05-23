@@ -42,11 +42,14 @@ class ProfileTouchStrategy(threading.Thread):
             self.visualizer = FinplotGraph(SIGNAL_CLUSTER_PERIOD)
             self.visualizer.start()
 
-    def set_df(self, df):
+    def set_df(self, df: pd.DataFrame):
         self.df = df
         logger.info("загружен новый data frame")
 
-    def analyze(self, trade_df) -> Optional[List[Order]]:
+    def analyze(
+            self,
+            trade_df: pd.DataFrame
+    ) -> Optional[List[Order]]:
         trade_data = trade_df.iloc[0]
         current_price = trade_data["price"]
         time = trade_data["time"]
@@ -122,7 +125,11 @@ class ProfileTouchStrategy(threading.Thread):
                                    invalid_entry_points=invalid_entry_points,
                                    clusters=self.clusters)
 
-    def check_entry_points(self, current_price, time) -> Optional[List[Order]]:
+    def check_entry_points(
+            self,
+            current_price: float,
+            time: datetime
+    ) -> Optional[List[Order]]:
         for volume_price, volume_level in self.processed_volume_levels.items():
             for touch_time, value in volume_level["times"].items():
                 if value is not None:
@@ -203,7 +210,13 @@ class ProfileTouchStrategy(threading.Thread):
                     self.processed_volume_levels[volume_price]["times"][touch_time] = False
                     self.processed_volume_levels[volume_price]["last_touch_time"] = None
 
-    def prepare_orders(self, current_price, time, stop, direction) -> List[Order]:
+    def prepare_orders(
+            self,
+            current_price: float,
+            time: datetime,
+            stop: float,
+            direction: OrderDirection
+    ) -> List[Order]:
         return prepare_orders(
             instrument=self.instrument_name,
             current_price=current_price,

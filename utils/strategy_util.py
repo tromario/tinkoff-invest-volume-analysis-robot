@@ -5,14 +5,20 @@ from tinkoff.invest import TradeDirection
 from settings import PERCENTAGE_VOLUME_LEVEL_RANGE
 
 
-def is_price_in_range_cluster(current_price, cluster_price):
+def is_price_in_range_cluster(
+        current_price: float,
+        cluster_price
+) -> bool:
     level_range = cluster_price * PERCENTAGE_VOLUME_LEVEL_RANGE / 100
     increased_level = cluster_price + level_range
     reduced_level = cluster_price - level_range
     return reduced_level <= current_price <= increased_level
 
 
-def merge_two_frames(source_df, new_df):
+def merge_two_frames(
+        source_df: pd.DataFrame,
+        new_df: pd.DataFrame
+) -> pd.DataFrame:
     if new_df is None or len(new_df) == 0:
         return source_df
     if source_df is None or len(source_df) == 0:
@@ -27,7 +33,7 @@ def merge_two_frames(source_df, new_df):
     return result_df.sort_values(["time", "index"]).reset_index(drop=True)
 
 
-def agg_ohlc(df):
+def agg_ohlc(df: pd.DataFrame) -> pd.Series:
     price = df["price"].values
     quantity = df["quantity"].values
     names = {
@@ -41,7 +47,7 @@ def agg_ohlc(df):
     return pd.Series(names)
 
 
-def calculate_ratio(candles):
+def calculate_ratio(candles: pd.DataFrame) -> pd.DataFrame:
     # процентное соотношение лонгистов/шортистов в свече
     difference = candles["high"] - candles["low"]
     long_ratio = (candles["close"] - candles["low"]) / difference * 100
@@ -67,7 +73,10 @@ def calculate_ratio(candles):
     return candles
 
 
-def ticks_to_cluster(df, period="1min"):
+def ticks_to_cluster(
+        df: pd.DataFrame,
+        period: str = "1min"
+) -> pd.DataFrame:
     candles = df.set_index(["time"])
     candles = candles.resample(period).apply(agg_ohlc)
     candles = candles.ffill()
@@ -100,7 +109,7 @@ def processed_volume_levels_to_times(processed_volume_levels):
     return valid_entry_points, invalid_entry_points
 
 
-def apply_frame_type(df):
+def apply_frame_type(df: pd.DataFrame) -> pd.DataFrame:
     return df.astype({
         "figi": "object",
         "direction": "int64",
@@ -108,3 +117,11 @@ def apply_frame_type(df):
         "quantity": "int64",
         # "time": "datetime64[ms]",
     })
+
+
+def create_empty_df() -> pd.DataFrame:
+    df = pd.DataFrame(columns=["figi", "direction", "price", "quantity", "time"])
+    df.time = pd.to_datetime(df.time, unit="ms")
+    df.price = pd.to_numeric(df.price)
+    df.quantity = pd.to_numeric(df.quantity)
+    return df

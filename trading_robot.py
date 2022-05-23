@@ -17,8 +17,9 @@ from services.order_service import OrderService
 from services.user_service import UserService
 from settings import INSTRUMENTS, CAN_OPEN_ORDERS, TOKEN
 from strategies.profile_touch_strategy import ProfileTouchStrategy
-from utils.format_util import quotation_to_float
-from utils.strategy_util import merge_two_frames
+from utils.exchange_util import is_open_exchange
+from utils.parse_util import processed_data
+from utils.strategy_util import merge_two_frames, create_empty_df
 
 pd.options.display.max_columns = None
 pd.options.display.max_rows = None
@@ -38,23 +39,12 @@ TIME_STEP = 60
 
 
 async def request_iterator():
+    instruments = list(map(lambda instrument: TradeInstrument(instrument["figi"]), INSTRUMENTS))
+    logger.info(instruments)
     yield MarketDataRequest(
         subscribe_trades_request=SubscribeTradesRequest(
             subscription_action=SubscriptionAction.SUBSCRIPTION_ACTION_SUBSCRIBE,
-            instruments=[
-                TradeInstrument(
-                    # USD000UTSTOM
-                    figi="BBG0013HGFT4"
-                ),
-                TradeInstrument(
-                    # SBER: Акции обыкновенные ПАО Сбербанк
-                    figi="BBG004730N88"
-                ),
-                TradeInstrument(
-                    # GAZP: Акции обыкновенные ПАО "Газпром"
-                    figi="BBG004730RP0"
-                ),
-            ],
+            instruments=instruments,
         )
     )
     while True:
@@ -63,42 +53,6 @@ async def request_iterator():
 
 def get_file_path_by_instrument(instrument):
     return f"./data/{instrument['name']}-{datetime.now().strftime('%Y%m%d')}.csv"
-
-
-def create_empty_df():
-    df = pd.DataFrame(columns=["figi", "direction", "price", "quantity", "time"])
-    df.time = pd.to_datetime(df.time, unit="ms")
-    df.price = pd.to_numeric(df.price)
-    df.quantity = pd.to_numeric(df.quantity)
-    return df
-
-
-# перенести в utils?
-def processed_data(trade):
-    try:
-        if trade is None:
-            return
-
-        price = quotation_to_float(trade.price)
-        data = pd.DataFrame.from_records([
-            {
-                "figi": trade.figi,
-                "direction": trade.direction,
-                "price": price,
-                "quantity": trade.quantity,
-                "time": pd.to_datetime(str(trade.time), utc=True)
-            }
-        ])
-
-        return data
-    except Exception as ex:
-        logger.error(ex)
-
-
-def is_open_exchange():
-    # условно биржа работает до 18мск
-    close_time = now().replace(hour=16, minute=0, second=0, microsecond=0)
-    return now() < close_time
 
 
 class TradingRobot:

@@ -6,7 +6,7 @@ import pandas as pd
 
 from services.order_service import OrderService
 from strategies.profile_touch_strategy import ProfileTouchStrategy
-from utils.format_util import parse_date
+from utils.parse_util import parse_date
 from utils.format_util import fixed_float
 from utils.strategy_util import apply_frame_type
 
@@ -102,7 +102,7 @@ if __name__ == "__main__":
                                "./data/GAZP-20220518.csv", "./data/GAZP-20220519.csv",
                                "./data/GAZP-20220520.csv", ]}
 
-    histories = [gaz_histories]
+    histories = [usd_histories]
     total_result = 0
 
     for history in histories:

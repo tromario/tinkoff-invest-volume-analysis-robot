@@ -1,20 +1,23 @@
+from datetime import datetime
 from typing import List
 from uuid import uuid4
+
+from tinkoff.invest import OrderDirection
 
 from domains.order import Order
 
 
 # подготовка списка ордеров для открытия сделки
 def prepare_orders(
-        instrument,
-        current_price,
-        time,
-        stop_loss,
-        direction,
-        count_lots,
-        count_goals,
-        goal_step,
-        first_goal
+        instrument: str,
+        current_price: float,
+        time: datetime,
+        stop_loss: float,
+        direction: OrderDirection,
+        count_lots: int,
+        count_goals: int,
+        goal_step: float,
+        first_goal: int
 ) -> List[Order]:
     group_id = str(uuid4())
     quantity = int(count_lots / count_goals)

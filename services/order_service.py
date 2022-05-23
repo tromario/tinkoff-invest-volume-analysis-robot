@@ -1,6 +1,7 @@
 import csv
 import logging
 import threading
+from datetime import datetime
 from itertools import groupby
 from os.path import exists
 from typing import List
@@ -11,8 +12,8 @@ from domains.order import Order
 from services.telegram_service import TelegramService
 from settings import NOTIFICATION, ACCOUNT_ID, TOKEN, IS_SANDBOX, CAN_REVERSE_ORDER
 from utils.exchange_util import is_open_orders, get_instrument_by_name
-from utils.order_util import is_order_already_open, get_reverse_order
 from utils.format_util import fixed_float
+from utils.order_util import is_order_already_open, get_reverse_order
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +66,13 @@ def load_orders():
     return orders
 
 
-def open_order(figi, quantity, direction, order_id, order_type=OrderType.ORDER_TYPE_MARKET):
+def open_order(
+        figi: str,
+        quantity: int,
+        direction: OrderDirection,
+        order_id: str,
+        order_type: OrderType = OrderType.ORDER_TYPE_MARKET
+):
     with Client(TOKEN) as client:
         # todo может возникнуть ситуация, когда будет создано 100 позиций с 1 лотом в каждой
         #  сервер не позволит выполнить моментально 100 запросов
@@ -140,7 +147,7 @@ class OrderService(threading.Thread):
         except Exception as ex:
             logger.error(ex)
 
-    def close_order(self, order, close_price):
+    def close_order(self, order: Order, close_price: float):
         order.status = "close"
         order.close = close_price
         if order.direction == OrderDirection.ORDER_DIRECTION_BUY.value:
@@ -175,7 +182,7 @@ class OrderService(threading.Thread):
         if self.is_notification:
             self.telegram_service.post(f"закрыта позиция на {order.instrument}: результат {order.result}")
 
-    def processed_orders(self, instrument, current_price, time):
+    def processed_orders(self, instrument: str, current_price: float, time: datetime):
         for order in self.orders:
             if order.status == "active":
                 if not is_open_orders(time):
