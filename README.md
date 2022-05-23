@@ -16,20 +16,20 @@
 ### Инструкция по запуску
 Версия python 3.8
 ```
-$ python3 -m venv ./venv
-$ source venv/bin/activate
+$ python -m venv ./venv
+$ ./venv/Scripts/activate
 $ pip3 install -r ./requirements.txt
 ```
 
 ### Запуск робота
 ```
-$ python3 ./trading_robot.py
+$ python ./trading_robot.py
 ```
 
 ### Запуск анализа истории
 - предварительно распаковать архив `./data/trades.zip`;
 - проверить указанные пути к историческим файлам для `./tests/test_profile_touch_strategy.py`;
-- выполнить: `python3 ./tests/test_profile_touch_strategy.py`
+- выполнить: `python ./tests/test_profile_touch_strategy.py`
 
 ### Возможности робота
 - накопление истории по обезличенным сделкам по указанным инструментам;
