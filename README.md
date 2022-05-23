@@ -1,7 +1,7 @@
 # tinkoff-invest-volume-analysis-robot
 ## Робот на основе объемного анализа для Тинькофф Инвестиций
 
-![Background image](https://blog-money.ru/wp-content/uploads/gorizontalnyj-obem.png)
+![Background image](/preview.png)
 
 ### О приложении
 Кластерный анализ и профиль рынка позволяет определить действительную заинтересованность участников рынка.<br/> 
@@ -18,18 +18,18 @@
 ```
 $ python3 -m venv ./venv
 $ source venv/bin/activate
-$ pip install -r ./requirements.txt
+$ pip3 install -r ./requirements.txt
 ```
 
 ### Запуск робота
 ```
-$ python ./trading_robot.py
+$ python3 ./trading_robot.py
 ```
 
 ### Запуск анализа истории
 - предварительно распаковать архив `./data/trades.zip`;
 - проверить указанные пути к историческим файлам для `./tests/test_profile_touch_strategy.py`;
-- выполнить: `python ./tests/test_profile_touch_strategy.py`
+- выполнить: `python3 ./tests/test_profile_touch_strategy.py`
 
 ### Возможности робота
 - накопление истории по обезличенным сделкам по указанным инструментам;
@@ -105,7 +105,7 @@ $ python ./trading_robot.py
 ### Планы по развитию
 
 #### Минимизировать риски стратегии
-- текущие настройки алгоритма часто дают убыточные сделки в боковике; 
+- текущие настройки алгоритма часто дают убыточные сделки, когда цена движется в узком диапазоне; 
 - провести более подробное тестирование истории на разных параметрах: ТФ свечей, ТФ объемных уровней;
 
 #### Архитектура
