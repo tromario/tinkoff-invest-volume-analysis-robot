@@ -19,7 +19,7 @@ format = "%(asctime)s %(levelname)s --- (%(filename)s).%(funcName)s(%(lineno)d):
 logging.basicConfig(format=format,
                     level=logging.INFO,
                     handlers=[
-                        logging.FileHandler(f"./logs/log-{date}.log", encoding="utf-8"),
+                        logging.FileHandler(f"./../logs/log-{date}.log", encoding="utf-8"),
                         logging.StreamHandler()
                     ])
 logger = logging.getLogger(__name__)
@@ -79,28 +79,28 @@ class TestProfileTouchStrategy:
 
 if __name__ == "__main__":
     usd_histories = {"name": "USD000UTSTOM",
-                     "files": ["./data/USD000UTSTOM-20220504.csv", "./data/USD000UTSTOM-20220505.csv",
-                               "./data/USD000UTSTOM-20220506.csv", "./data/USD000UTSTOM-20220511.csv",
-                               "./data/USD000UTSTOM-20220512.csv", "./data/USD000UTSTOM-20220513.csv",
-                               "./data/USD000UTSTOM-20220516.csv", "./data/USD000UTSTOM-20220517.csv",
-                               "./data/USD000UTSTOM-20220518.csv", "./data/USD000UTSTOM-20220519.csv",
-                               "./data/USD000UTSTOM-20220520.csv"]}
+                     "files": ["./../data/USD000UTSTOM-20220504.csv", "./../data/USD000UTSTOM-20220505.csv",
+                               "./../data/USD000UTSTOM-20220506.csv", "./../data/USD000UTSTOM-20220511.csv",
+                               "./../data/USD000UTSTOM-20220512.csv", "./../data/USD000UTSTOM-20220513.csv",
+                               "./../data/USD000UTSTOM-20220516.csv", "./../data/USD000UTSTOM-20220517.csv",
+                               "./../data/USD000UTSTOM-20220518.csv", "./../data/USD000UTSTOM-20220519.csv",
+                               "./../data/USD000UTSTOM-20220520.csv"]}
 
     sber_histories = {"name": "SBER",
-                      "files": ["./data/SBER-20220504.csv", "./data/SBER-20220505.csv",
-                                "./data/SBER-20220506.csv", "./data/SBER-20220511.csv",
-                                "./data/SBER-20220512.csv", "./data/SBER-20220513.csv",
-                                "./data/SBER-20220516.csv", "./data/SBER-20220517.csv",
-                                "./data/SBER-20220518.csv", "./data/SBER-20220519.csv",  # проверить
-                                "./data/SBER-20220520.csv"]}
+                      "files": ["./../data/SBER-20220504.csv", "./../data/SBER-20220505.csv",
+                                "./../data/SBER-20220506.csv", "./../data/SBER-20220511.csv",
+                                "./../data/SBER-20220512.csv", "./../data/SBER-20220513.csv",
+                                "./../data/SBER-20220516.csv", "./../data/SBER-20220517.csv",
+                                "./../data/SBER-20220518.csv", "./../data/SBER-20220519.csv",  # проверить
+                                "./../data/SBER-20220520.csv"]}
 
     gaz_histories = {"name": "GAZP",
-                     "files": ["./data/GAZP-20220504.csv", "./data/GAZP-20220505.csv",
-                               "./data/GAZP-20220506.csv", "./data/GAZP-20220511.csv",
-                               "./data/GAZP-20220512.csv", "./data/GAZP-20220513.csv",
-                               "./data/GAZP-20220516.csv", "./data/GAZP-20220517.csv",
-                               "./data/GAZP-20220518.csv", "./data/GAZP-20220519.csv",
-                               "./data/GAZP-20220520.csv", ]}
+                     "files": ["./../data/GAZP-20220504.csv", "./../data/GAZP-20220505.csv",
+                               "./../data/GAZP-20220506.csv", "./../data/GAZP-20220511.csv",
+                               "./../data/GAZP-20220512.csv", "./../data/GAZP-20220513.csv",
+                               "./../data/GAZP-20220516.csv", "./../data/GAZP-20220517.csv",
+                               "./../data/GAZP-20220518.csv", "./../data/GAZP-20220519.csv",
+                               "./../data/GAZP-20220520.csv", ]}
 
     histories = [usd_histories]
     total_result = 0
