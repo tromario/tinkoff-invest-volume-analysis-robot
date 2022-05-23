@@ -91,7 +91,7 @@ if __name__ == "__main__":
                                 "./../data/SBER-20220506.csv", "./../data/SBER-20220511.csv",
                                 "./../data/SBER-20220512.csv", "./../data/SBER-20220513.csv",
                                 "./../data/SBER-20220516.csv", "./../data/SBER-20220517.csv",
-                                "./../data/SBER-20220518.csv", "./../data/SBER-20220519.csv",  # проверить
+                                "./../data/SBER-20220518.csv", "./../data/SBER-20220519.csv",
                                 "./../data/SBER-20220520.csv"]}
 
     gaz_histories = {"name": "GAZP",
