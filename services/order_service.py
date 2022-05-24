@@ -74,6 +74,9 @@ def open_order(
         order_id: str,
         order_type: OrderType = OrderType.ORDER_TYPE_MARKET
 ):
+    if not ACCOUNT_ID:
+        logger.error("Не задан счет для торговли. Проверьте общие настройки приложения")
+
     with Client(TOKEN, app_name=APP_NAME) as client:
         try:
             # todo может возникнуть ситуация, когда будет создано 100 позиций с 1 лотом в каждой

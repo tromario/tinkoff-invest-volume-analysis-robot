@@ -17,6 +17,10 @@ def get_instrument_by_asset(asset, instruments):
 
 class UserService:
     def show_settings(self):
+        if not TOKEN:
+            logger.error("Не задан токен профиля для Тинькофф Инвестиций. Проверьте общие настройки приложения")
+            exit()
+
         try:
             with Client(TOKEN) as client:
                 if IS_SANDBOX:
