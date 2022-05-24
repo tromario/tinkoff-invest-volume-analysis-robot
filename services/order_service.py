@@ -18,7 +18,7 @@ from utils.order_util import is_order_already_open, get_reverse_order
 
 logger = logging.getLogger(__name__)
 
-orders_file_path = "./data/orders.csv"
+orders_file_path = "./../data/orders.csv"
 
 
 def write_file(order: Order):
@@ -215,7 +215,7 @@ class OrderService(threading.Thread):
     def write_statistics(self):
         groups = groupby(self.orders, lambda order: order.instrument)
         for instrument, group in groups:
-            file_path = f"./logs/statistics-{instrument}.log"
+            file_path = f"./../logs/statistics-{instrument}.log"
             orders: List[Order] = list(group)
             with open(file_path, "a", encoding="utf-8") as file:
                 take_orders = list(filter(lambda x: x.is_win, orders))

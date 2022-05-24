@@ -8,9 +8,9 @@ if __name__ == "__main__":
     prev_time = None
 
     file_paths = [
-        "./data/USD000UTSTOM-20220520.csv",
-        "./data/SBER-20220520.csv",
-        "./data/GAZP-20220520.csv"
+        "./../data/USD000UTSTOM-20220520.csv",
+        "./../data/SBER-20220520.csv",
+        "./../data/GAZP-20220520.csv"
     ]
 
     for file_path in file_paths:

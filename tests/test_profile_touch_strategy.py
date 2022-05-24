@@ -102,7 +102,7 @@ if __name__ == "__main__":
                                "./../data/GAZP-20220518.csv", "./../data/GAZP-20220519.csv",
                                "./../data/GAZP-20220520.csv", ]}
 
-    histories = [usd_histories]
+    histories = [usd_histories, sber_histories, gaz_histories]
     total_result = 0
 
     for history in histories:
