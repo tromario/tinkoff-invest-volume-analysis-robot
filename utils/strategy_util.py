@@ -5,6 +5,7 @@ from tinkoff.invest import TradeDirection
 from settings import PERCENTAGE_VOLUME_LEVEL_RANGE
 
 
+# находится ли цена в процентном диапазоне
 def is_price_in_range_cluster(
         current_price: float,
         cluster_price
@@ -15,6 +16,7 @@ def is_price_in_range_cluster(
     return reduced_level <= current_price <= increased_level
 
 
+# объединение двух DateFrame
 def merge_two_frames(
         source_df: pd.DataFrame,
         new_df: pd.DataFrame
@@ -33,8 +35,8 @@ def merge_two_frames(
     return result_df.sort_values(["time", "index"]).reset_index(drop=True)
 
 
+# расчет процентного соотношения лонгистов/шортистов в свече
 def calculate_ratio(candles: pd.DataFrame) -> pd.DataFrame:
-    # процентное соотношение лонгистов/шортистов в свече
     difference = candles["high"] - candles["low"]
     long_ratio = (candles["close"] - candles["low"]) / difference * 100
     short_ratio = (candles["high"] - candles["close"]) / difference * 100
@@ -51,6 +53,7 @@ def calculate_ratio(candles: pd.DataFrame) -> pd.DataFrame:
     # определение победителя:
     # если соотношение лонгистов больше и макс объем как можно ниже, то приоритет для лонга
     # если соотношение шортистов больше и макс объем как можно выше, то приоритет для шорта
+    # todo вынести значения в константы
     candles.loc[candles["direction"] == TradeDirection.TRADE_DIRECTION_BUY, "win"] = (candles["long"] > 50) & (
             candles["percent"] <= 40)
     candles.loc[candles["direction"] == TradeDirection.TRADE_DIRECTION_SELL, "win"] = (candles["short"] > 50) & (
@@ -59,6 +62,7 @@ def calculate_ratio(candles: pd.DataFrame) -> pd.DataFrame:
     return candles
 
 
+# агрегация данных для получения свечи
 def agg_ohlc(df: pd.DataFrame) -> pd.Series:
     if df.empty:
         return pd.Series({
@@ -81,6 +85,7 @@ def agg_ohlc(df: pd.DataFrame) -> pd.Series:
     })
 
 
+# преобразование тиковых данных в свечи с максимальным объемом
 def ticks_to_cluster(
         df: pd.DataFrame,
         period: str = "1min"
@@ -101,6 +106,8 @@ def ticks_to_cluster(
     return candles.reset_index(drop=True)
 
 
+# получение подходящего и не подходящего времени из сформированных
+# точек входов для последующего отображения на графике
 def processed_volume_levels_to_times(processed_volume_levels):
     valid_entry_points = []
     invalid_entry_points = []

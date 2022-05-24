@@ -12,8 +12,9 @@ from constants import APP_NAME
 from domains.order import Order
 from services.telegram_service import TelegramService
 from settings import NOTIFICATION, ACCOUNT_ID, TOKEN, IS_SANDBOX, CAN_REVERSE_ORDER
-from utils.exchange_util import is_open_orders, get_instrument_by_name
+from utils.exchange_util import is_open_orders
 from utils.format_util import fixed_float
+from utils.instrument_util import get_instrument_by_name
 from utils.order_util import is_order_already_open, get_reverse_order
 
 logger = logging.getLogger(__name__)

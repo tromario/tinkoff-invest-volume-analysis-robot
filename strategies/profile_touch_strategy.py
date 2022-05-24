@@ -44,7 +44,7 @@ class ProfileTouchStrategy(threading.Thread):
 
     def set_df(self, df: pd.DataFrame):
         self.df = df
-        logger.info("загружен новый data frame")
+        logger.info("загружен новый DataFrame")
 
     def analyze(
             self,
@@ -100,10 +100,9 @@ class ProfileTouchStrategy(threading.Thread):
                     self.processed_volume_levels[cluster_price]["last_touch_time"] = time
                     self.processed_volume_levels[cluster_price]["times"][time] = None
 
-                    logger.info(f"объемный уровень {cluster_price} сформирован в {cluster_time}")
-                    logger.info(
-                        f"{time}: цена {current_price} подошла к объемному уровню {self.processed_volume_levels[cluster_price]['count_touches']} раз\n"
-                    )
+                    count_touches = self.processed_volume_levels[cluster_price]['count_touches']
+                    logger.info("объемный уровень %s сформирован %s", cluster_price, cluster_time)
+                    logger.info("время %s: цена %s подошла к объемному уровню %s раз\n", time, current_price, count_touches)
                     break
 
         if (time - self.first_tick_time).total_seconds() >= FIVE_MINUTES_TO_SECONDS:
@@ -138,11 +137,6 @@ class ProfileTouchStrategy(threading.Thread):
                 candles = calculate_ratio(candles)
                 prev_candle = candles.iloc[-3]
                 current_candle = candles.iloc[-2]
-                # todo подумать, как лучше получать свечи: по условию или индексу
-                #  с условиями сложнее, нужно дополнительно вычислять
-                #  с индексами, с виду, не должно быть проблем, только если возникнет null
-                # prev_candle = candles.loc[candles["time"] == pd.to_datetime(touch_time).floor("10min")]
-                # current_candle = candles.loc[candles["time"] == pd.to_datetime(touch_time).floor(SIGNAL_CLUSTER_PERIOD)]
                 if current_candle.empty or prev_candle.empty:
                     logger.error("свеча не найдена")
                     continue
@@ -166,7 +160,10 @@ class ProfileTouchStrategy(threading.Thread):
 
                         if current_price < max_volume_price:
                             logger.info(
-                                f"пропуск входа - цена открытия ниже макс объема в сигнальной свече, time={time}, price={current_price}")
+                                "пропуск входа - цена открытия ниже макс объема в сигнальной свече, время %s, цена %s",
+                                time,
+                                current_price
+                            )
                             return
 
                         stop = max_volume_price - percent
@@ -176,7 +173,7 @@ class ProfileTouchStrategy(threading.Thread):
                             stop=stop,
                             direction=OrderDirection.ORDER_DIRECTION_BUY
                         )
-                        logger.info(f"подтверждена точка входа в лонг, ордера: {orders}")
+                        logger.info("подтверждена точка входа в лонг, ордера: %s", orders)
                         return orders
 
                     else:
@@ -192,7 +189,10 @@ class ProfileTouchStrategy(threading.Thread):
 
                         if current_price > max_volume_price:
                             logger.info(
-                                f"пропуск входа - цена открытия выше макс объема в сигнальной свече, time={time}, price={current_price}")
+                                "пропуск входа - цена открытия выше макс объема в сигнальной свече, время %s, цена %s",
+                                time,
+                                current_price
+                            )
                             return
 
                         stop = max_volume_price + percent
@@ -202,7 +202,7 @@ class ProfileTouchStrategy(threading.Thread):
                             stop=stop,
                             direction=OrderDirection.ORDER_DIRECTION_SELL
                         )
-                        logger.info(f"подтверждена точка входа в шорт, ордера: {orders}")
+                        logger.info("подтверждена точка входа в шорт, ордера: %s", orders)
                         return orders
 
                 else:

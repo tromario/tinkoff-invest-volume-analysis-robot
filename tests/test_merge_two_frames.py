@@ -52,7 +52,7 @@ class TestMergeTwoFrames(unittest.TestCase):
         self.source_df = pd.DataFrame(source, columns=["figi", "direction", "price", "quantity", "time"])
 
         # запрос данных с 07:01:01 по 07:02:08
-        # апи вернет с 07:01:00 по 07:02:59
+        # api вернет с 07:01:00 по 07:02:59
         response = [
             {"figi": "BBG0013HGFT4", "direction": 2, "price": 66.6775, "quantity": 7,
              "time": "2022-05-06 07:01:01.531078+00:00"},

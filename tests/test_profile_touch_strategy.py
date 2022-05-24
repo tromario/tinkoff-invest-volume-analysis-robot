@@ -6,6 +6,7 @@ import pandas as pd
 
 from services.order_service import OrderService
 from strategies.profile_touch_strategy import ProfileTouchStrategy
+from utils.logger import init_logging
 from utils.parse_util import parse_date
 from utils.format_util import fixed_float
 from utils.strategy_util import apply_frame_type
@@ -14,14 +15,7 @@ pd.options.display.max_columns = None
 pd.options.display.max_rows = None
 pd.options.display.width = None
 
-date = datetime.datetime.now().strftime("%Y-%m-%d")
-format = "%(asctime)s %(levelname)s --- (%(filename)s).%(funcName)s(%(lineno)d):\t %(message)s"
-logging.basicConfig(format=format,
-                    level=logging.INFO,
-                    handlers=[
-                        logging.FileHandler(f"./../logs/log-{date}.log", encoding="utf-8"),
-                        logging.StreamHandler()
-                    ])
+init_logging()
 logger = logging.getLogger(__name__)
 
 
@@ -41,7 +35,7 @@ class TestProfileTouchStrategy:
 
     def run(self):
         test_start_time = datetime.datetime.now()
-        logger.info(f"анализ истории {self.file_path}")
+        logger.info("анализ истории: %s", self.file_path)
 
         with open(self.file_path, newline='') as file:
             reader = csv.DictReader(file, delimiter=",")
@@ -64,7 +58,8 @@ class TestProfileTouchStrategy:
                 processed_trade_df = apply_frame_type(processed_trade_df)
                 orders = self.profile_touch_strategy.analyze(processed_trade_df)
                 if orders is not None:
-                    [self.order_service.create_order(order) for order in orders]
+                    for order in orders:
+                        self.order_service.create_order(order)
 
         # после завершения анализа перестраиваю график, т.к. закрытие торгов не совпадает целому часу
         # например 15:59:59.230333+00:00
@@ -74,7 +69,7 @@ class TestProfileTouchStrategy:
         test_end_time = datetime.datetime.now()
         total_test_time = (test_end_time - test_start_time).total_seconds() / 60
         logger.info("анализ завершен")
-        logger.info(f"время тестирования: {fixed_float(total_test_time)} мин.")
+        logger.info("время тестирования: %s мин.", fixed_float(total_test_time))
 
 
 if __name__ == "__main__":
@@ -102,10 +97,7 @@ if __name__ == "__main__":
                                "./../data/GAZP-20220518.csv", "./../data/GAZP-20220519.csv",
                                "./../data/GAZP-20220520.csv", ]}
 
-    histories = [usd_histories, sber_histories, gaz_histories]
-    total_result = 0
-
-    for history in histories:
+    for history in [usd_histories, sber_histories, gaz_histories]:
         for file_path in history["files"]:
             tester = TestProfileTouchStrategy(history["name"], file_path)
             tester.run()

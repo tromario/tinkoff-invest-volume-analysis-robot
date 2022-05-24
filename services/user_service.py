@@ -18,7 +18,7 @@ def get_instrument_by_asset(asset, instruments):
 class UserService:
     def show_settings(self):
         if not TOKEN:
-            logger.error("Не задан токен профиля для Тинькофф Инвестиций. Проверьте общие настройки приложения")
+            print("Не задан токен профиля для Тинькофф Инвестиций. Проверьте общие настройки приложения")
             exit()
 
         try:
@@ -33,7 +33,8 @@ class UserService:
                 print("Список счетов:")
                 for account in response.accounts:
                     print(
-                        f"name=[{account.name}], opened=[{account.opened_date}], status=[{account.status}], id=[{account.id}]")
+                        f"name=[{account.name}], opened=[{account.opened_date}], status=[{account.status}], id=[{account.id}]"
+                    )
                 print()
 
                 print("Актуальный список фьючерсов по выбранным активам:")
